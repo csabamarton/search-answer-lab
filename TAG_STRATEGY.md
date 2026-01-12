@@ -1,75 +1,78 @@
 # Git Tag Strategy for Blog Posts
 
-## Current Status
+## Current Status ✅
 
-✅ **Tag Created:** `v0.4-semantic` (pushed to GitHub)
-- Represents: Post #4 - Semantic Search (current state)
-- Includes: Traditional FTS + Semantic Vector Search
+**Tags Created:**
+- ✅ `v0.3-baseline` - Post #3: Traditional Search Baseline (PostgreSQL FTS only)
+- ✅ `v0.4-semantic` - Post #4: Semantic Search (Traditional + Semantic)
 
-## What You Have Now
+**Releases Created:**
+- ✅ GitHub Release for `v0.3-baseline`
+- ✅ GitHub Release for `v0.4-semantic`
 
-Your repository has:
-- **Main branch:** Full implementation (traditional + semantic)
-- **Tag v0.4-semantic:** Points to current commit (Post #4)
+**Branches:**
+- `main` - Current development (full implementation)
+- `post-3-traditional-only` - Traditional search only branch (tagged as v0.3-baseline)
 
-## Strategy for Blog Posts
+## Using Tags
 
-### Option 1: Tags Only (Simplest)
-
-**Current approach:**
-- Tag `v0.4-semantic` = Post #4 (current state)
-- For Post #3: Document that readers should use `mode: "traditional"` only
-- Future posts: Create tags as you implement features
-
-**Pros:**
-- Simple, no extra branches
-- One codebase to maintain
-- Easy to reference
-
-**Cons:**
-- Post #3 readers see semantic code (even if unused)
-
-### Option 2: Create Traditional-Only Branch (Cleaner)
-
-**Recommended approach:**
-1. Create branch `post-3-traditional-only`
-2. Remove semantic-specific files
-3. Tag that branch as `v0.3-baseline`
-4. Keep `main` as current (with both modes)
-
-**Pros:**
-- Clean "traditional only" codebase for Post #3
-- Better educational experience
-- Clear separation
-
-**Cons:**
-- More work to maintain
-- Need to keep branch updated if fixing bugs
-
-## Recommended Action Plan
-
-### Step 1: Tag Current State (Done ✅)
+### For Blog Post #3 (Traditional Search)
 
 ```bash
-git tag -a v0.4-semantic -m "Post #4: Semantic Search"
-git push origin v0.4-semantic
+git clone https://github.com/csabamarton/search-answer-lab.git
+cd search-answer-lab
+git checkout v0.3-baseline
 ```
 
-### Step 2: Create Post #3 Tag (Choose One)
+**What's included:**
+- ✅ Traditional full-text search (PostgreSQL FTS)
+- ✅ Spring Boot REST API
+- ✅ React frontend (traditional mode only)
+- ✅ No semantic/embedding code
+- ✅ Standard PostgreSQL (not pgvector)
 
-**Option A: Simple (Recommended for now)**
-- Keep current codebase
-- In Post #3 blog, mention: "Use `mode: 'traditional'` only"
-- Tag current state as `v0.3-baseline` with note: "Traditional mode only (semantic code present but unused)"
+### For Blog Post #4 (Semantic Search)
 
-**Option B: Clean Branch**
-- Follow instructions in `CREATE_POST3_TAG.md`
-- Creates separate branch without semantic code
-- More work but cleaner
+```bash
+git clone https://github.com/csabamarton/search-answer-lab.git
+cd search-answer-lab
+git checkout v0.4-semantic
+```
 
-### Step 3: Future Tags
+**What's included:**
+- ✅ Traditional full-text search
+- ✅ Semantic vector search (pgvector + embeddings)
+- ✅ Python embeddings service
+- ✅ Mode toggle in frontend
+- ✅ Automatic fallback mechanism
 
-As you implement features, create tags:
+## Tag Management
+
+**List all tags:**
+```bash
+git tag -l
+```
+
+**View tag details:**
+```bash
+git show v0.3-baseline
+git show v0.4-semantic
+```
+
+**Checkout a tag:**
+```bash
+git checkout v0.3-baseline  # Traditional only
+git checkout v0.4-semantic  # Full implementation
+```
+
+**Return to main:**
+```bash
+git checkout main
+```
+
+## Future Tags
+
+As you implement more features, create tags:
 
 ```bash
 # After hybrid search
@@ -81,83 +84,24 @@ git tag -a v0.6-rag -m "Post #6: RAG Answer Generation"
 git push origin v0.6-rag
 ```
 
-## Using Tags in Blog Posts
-
-### In Your Blog Post #4:
-
-```markdown
-## Try It Yourself
-
-The complete implementation is available on GitHub:
-
-```bash
-git clone https://github.com/csabamarton/search-answer-lab.git
-cd search-answer-lab
-git checkout v0.4-semantic
-```
-
-See [README.md](https://github.com/csabamarton/search-answer-lab) for setup instructions.
-```
-
-### In Your Blog Post #3:
-
-```markdown
-## Try It Yourself
-
-Checkout the traditional search baseline:
-
-```bash
-git clone https://github.com/csabamarton/search-answer-lab.git
-cd search-answer-lab
-git checkout v0.3-baseline  # or v0.4-semantic and use traditional mode
-```
-
-**Note:** The codebase includes semantic search code, but for this post, we're only using traditional mode. See Post #4 for semantic implementation.
-```
-
-## Quick Commands
-
-**List all tags:**
-```bash
-git tag -l
-```
-
-**Checkout a tag:**
-```bash
-git checkout v0.4-semantic
-```
-
-**Create a new tag:**
-```bash
-git tag -a v0.5-hybrid -m "Post #5: Hybrid Search"
-git push origin v0.5-hybrid
-```
-
-**View tag details:**
-```bash
-git show v0.4-semantic
-```
-
 ## GitHub Releases
 
-After creating tags, create GitHub Releases:
+All tags have corresponding GitHub Releases with:
+- Release notes
+- Links to blog posts
+- Key features
+- Performance metrics
 
-1. Go to: https://github.com/csabamarton/search-answer-lab/releases
-2. Click "Create a new release"
-3. Select tag (e.g., `v0.4-semantic`)
-4. Add release notes:
-   - What's new
-   - Link to blog post
-   - Key features
-   - Performance metrics
+View releases: https://github.com/csabamarton/search-answer-lab/releases
 
 ## Summary
 
-**What's Done:**
-- ✅ Tag `v0.4-semantic` created and pushed
-- ✅ README updated with tag information
+✅ **Completed:**
+- v0.3-baseline tag and release (Post #3)
+- v0.4-semantic tag and release (Post #4)
+- Traditional-only branch created
+- All documentation updated
 
-**What's Next:**
-- Decide on Post #3 tag strategy (Option A or B above)
-- Create GitHub Releases for tags
-- Update blog posts with tag links
+⏭️ **Next Steps:**
+- Create tags/releases for future blog posts (v0.5-hybrid, v0.6-rag)
+- Update README with new tags as they're created

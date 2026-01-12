@@ -1,0 +1,390 @@
+{
+	"info": {
+		"_postman_id": "search-answer-lab-api",
+		"name": "Search Answer Lab API",
+		"description": "Collection for Search Answer Lab backend API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Application Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Basic health check endpoint. Returns application status and timestamp."
+					},
+					"response": []
+				},
+				{
+					"name": "Database Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/db",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"db"
+							]
+						},
+						"description": "Database connectivity health check. Returns database connection status."
+					},
+					"response": []
+				},
+				{
+					"name": "Embeddings Service Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{embeddingsUrl}}/health",
+							"host": [
+								"{{embeddingsUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Health check for the embeddings service. Returns service status and model information."
+					},
+					"response": []
+				}
+			],
+			"description": "Health check endpoints for monitoring application, database, and embeddings service status"
+		},
+		{
+			"name": "Search",
+			"item": [
+				{
+					"name": "Traditional",
+					"item": [
+						{
+							"name": "Traditional Search",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"database\",\n  \"mode\": \"traditional\",\n  \"page\": 0,\n  \"pageSize\": 10,\n  \"traceId\": null\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Execute a traditional full-text search query using PostgreSQL FTS. Returns paginated results with relevance scores."
+							},
+							"response": []
+						},
+						{
+							"name": "Traditional Search - Minimal",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"postgresql\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Minimal search request with only the query field. Uses default values for page (0) and pageSize (10)."
+							},
+							"response": []
+						},
+						{
+							"name": "Traditional Search - Pagination",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"spring boot\",\n  \"mode\": \"traditional\",\n  \"page\": 0,\n  \"pageSize\": 5,\n  \"traceId\": \"trace-123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Search request with pagination (page 0, pageSize 5) and trace ID for tracking."
+							},
+							"response": []
+						},
+						{
+							"name": "Traditional Search - Multi-word",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"docker compose best practices\",\n  \"mode\": \"traditional\",\n  \"page\": 0,\n  \"pageSize\": 10\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Search with multiple words. All words must be present in the results (AND operator)."
+							},
+							"response": []
+						}
+					],
+					"description": "Traditional full-text search endpoints using PostgreSQL FTS (tsvector/tsquery)"
+				},
+				{
+					"name": "Semantic",
+					"item": [
+						{
+							"name": "Semantic Search",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"how to improve database performance\",\n  \"mode\": \"semantic\",\n  \"page\": 0,\n  \"pageSize\": 10\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Execute a semantic search query using vector embeddings. Returns results based on semantic similarity rather than keyword matching. Falls back to traditional search if embeddings service is unavailable."
+							},
+							"response": []
+						},
+						{
+							"name": "Semantic Search - Minimal",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"database optimization\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Minimal semantic search request. Uses default mode (traditional) if mode not specified, so explicitly set mode to semantic."
+							},
+							"response": []
+						},
+						{
+							"name": "Semantic Search - Pagination",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"monitoring and observability\",\n  \"mode\": \"semantic\",\n  \"page\": 0,\n  \"pageSize\": 5\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Semantic search with pagination. Returns top 5 most semantically similar results."
+							},
+							"response": []
+						},
+						{
+							"name": "Semantic Search - Conceptual Query",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"best practices for deploying applications\",\n  \"mode\": \"semantic\",\n  \"page\": 0,\n  \"pageSize\": 10\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Semantic search with a conceptual query. Semantic search excels at finding documents that match the meaning/intent even if they don't contain exact keywords."
+							},
+							"response": []
+						}
+					],
+					"description": "Semantic search endpoints using vector embeddings (pgvector). Requires embeddings service to be running."
+				}
+			],
+			"description": "Search endpoints for both traditional (FTS) and semantic (vector) search"
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Reindex All Documents",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reindex?maxChunkChars=1200",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"reindex"
+							],
+							"query": [
+								{
+									"key": "maxChunkChars",
+									"value": "1200",
+									"description": "Maximum characters per chunk (default: 1200)"
+								}
+							]
+						},
+						"description": "Reindex all documents: chunks them, generates embeddings, and stores in document_chunks table. Requires embeddings service to be running. This is a dev-only endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Reindex Document by ID",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reindex/1?maxChunkChars=1200",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"reindex",
+								"1"
+							],
+							"query": [
+								{
+									"key": "maxChunkChars",
+									"value": "1200",
+									"description": "Maximum characters per chunk (default: 1200)"
+								}
+							]
+						},
+						"description": "Reindex a specific document by ID. Useful for testing or updating a single document's embeddings."
+					},
+					"response": []
+				}
+			],
+			"description": "Admin endpoints for managing embeddings and document indexing. Dev-only endpoints (require dev profile)."
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": "Base URL for the Spring Boot backend API"
+		},
+		{
+			"key": "embeddingsUrl",
+			"value": "http://localhost:8090",
+			"type": "string",
+			"description": "Base URL for the Python embeddings service"
+		}
+	]
+}

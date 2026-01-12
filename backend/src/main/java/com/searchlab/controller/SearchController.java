@@ -4,7 +4,6 @@ import com.searchlab.model.dto.SearchMetadata;
 import com.searchlab.model.dto.SearchRequest;
 import com.searchlab.model.dto.SearchResponse;
 import com.searchlab.model.dto.SearchResult;
-import com.searchlab.semantic.SemanticSearchService;
 import com.searchlab.service.TraditionalSearchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,16 +16,15 @@ import java.util.UUID;
 
 /**
  * REST controller for search operations.
- * Handles traditional keyword search and will support AI-powered search.
+ * Handles traditional keyword search using PostgreSQL FTS.
  */
 @RestController
 @RequestMapping("/api/search")
 @CrossOrigin(origins = "http://localhost:3000")
-    @RequiredArgsConstructor
+@RequiredArgsConstructor
 public class SearchController {
 
     private final TraditionalSearchService traditionalSearchService;
-    private final SemanticSearchService semanticSearchService;
 
     /**
      * Execute search query.
@@ -41,33 +39,13 @@ public class SearchController {
         try {
             // Get search parameters (with defaults)
             String query = request.getQuery();
-            String mode = request.getMode() != null ? request.getMode() : "traditional";
             int page = request.getPage() != null ? request.getPage() : 0;
             int pageSize = request.getPageSize() != null ? request.getPageSize() : 10;
             
-            List<SearchResult> results;
-            long totalResults;
-            boolean fallbackUsed = false;
-            
-            // Execute search based on mode
-            try {
-                if ("semantic".equals(mode)) {
-                    // Try semantic search
-                    results = semanticSearchService.search(query, page, pageSize);
-                    totalResults = semanticSearchService.countResults(query);
-                } else {
-                    // Traditional search
-                    TraditionalSearchService.SearchResultPage resultPage = traditionalSearchService.search(query, page, pageSize);
-                    results = resultPage.getResults();
-                    totalResults = resultPage.getTotalElements();
-                }
-            } catch (Exception e) {
-                // Fallback to traditional on any error
-                fallbackUsed = true;
-                TraditionalSearchService.SearchResultPage resultPage = traditionalSearchService.search(query, page, pageSize);
-                results = resultPage.getResults();
-                totalResults = resultPage.getTotalElements();
-            }
+            // Execute traditional search
+            TraditionalSearchService.SearchResultPage resultPage = traditionalSearchService.search(query, page, pageSize);
+            List<SearchResult> results = resultPage.getResults();
+            long totalResults = resultPage.getTotalElements();
             
             // Calculate duration
             long durationMs = System.currentTimeMillis() - startTime;
@@ -78,8 +56,8 @@ public class SearchController {
                     .totalResults((int) totalResults)
                     .page(page)
                     .pageSize(pageSize)
-                    .searchMode(mode)
-                    .fallbackUsed(fallbackUsed)
+                    .searchMode("traditional")
+                    .fallbackUsed(false)
                     .build();
             
             // Build response
@@ -100,7 +78,7 @@ public class SearchController {
                     .totalResults(0)
                     .page(request.getPage() != null ? request.getPage() : 0)
                     .pageSize(request.getPageSize() != null ? request.getPageSize() : 10)
-                    .searchMode(request.getMode() != null ? request.getMode() : "traditional")
+                    .searchMode("traditional")
                     .fallbackUsed(false)
                     .build();
             

@@ -19,7 +19,7 @@ function SearchPage() {
 
   const handleSearch = () => {
     if (query.trim()) {
-      executeSearch(query, mode)
+      executeSearch(query, 'traditional')
     }
   }
 
@@ -31,7 +31,7 @@ function SearchPage() {
           Search the Knowledge Base
         </h2>
         <p className="text-gray-600">
-          Compare traditional keyword search with AI-powered search
+          Traditional keyword search using PostgreSQL full-text search
         </p>
       </div>
 
@@ -44,7 +44,7 @@ function SearchPage() {
         />
 
         <div className="flex justify-center">
-          <ModeToggle mode={mode} onChange={setMode} />
+          <ModeToggle />
         </div>
       </div>
 

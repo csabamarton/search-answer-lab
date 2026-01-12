@@ -60,11 +60,6 @@ spring:
   jpa:
     show-sql: true
 
-# Embeddings service configuration (root level, not under spring:)
-embeddings:
-  base-url: http://localhost:8090
-  timeout-seconds: 5
-
 # Logging
 logging:
   level:

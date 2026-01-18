@@ -1,0 +1,23 @@
+{
+  "name": "search-answer-lab-mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP server exposing search_docs tool for SearchLab backend",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["mcp", "model-context-protocol", "search"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

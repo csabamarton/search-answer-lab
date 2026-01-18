@@ -9,6 +9,7 @@ search-answer-lab/
 ├── backend/              # Spring Boot REST API (Java 17)
 ├── frontend/             # React + TypeScript + Vite
 ├── embeddings-service/   # Python FastAPI service for embeddings
+├── mcp-server/           # TypeScript MCP server for AI agents (v0.5+)
 └── docker-compose.yml    # PostgreSQL with pgvector extension
 ```
 
@@ -63,6 +64,33 @@ npm run dev
 ```
 
 Frontend runs on `http://localhost:3000`
+
+## 🤖 MCP Integration (v0.5+)
+
+This project includes an MCP (Model Context Protocol) server that allows AI agents like Claude Desktop to search your knowledge base intelligently.
+
+### Quick Start with Claude Desktop
+
+1. **Build and start the MCP server**:
+```bash
+cd mcp-server
+npm install
+npm run build
+```
+
+2. **Configure Claude Desktop** - See [mcp-server/README.md](mcp-server/README.md) for detailed setup instructions
+
+3. **Ask Claude to search**:
+> "Use the search-answer-lab tool to find information about database performance"
+
+### What You Can Do
+
+- ✅ Semantic search via Claude Desktop
+- ✅ Traditional keyword search
+- ✅ Natural language queries
+- ✅ Multi-document synthesis
+
+See [mcp-server/README.md](mcp-server/README.md) for complete documentation.
 
 ### 5. Index Documents (First Time)
 

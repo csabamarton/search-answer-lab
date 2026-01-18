@@ -20,7 +20,7 @@ import java.util.UUID;
  * Handles traditional keyword search and will support AI-powered search.
  */
 @RestController
-@RequestMapping("/api/search")
+@RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
     @RequiredArgsConstructor
 public class SearchController {
@@ -34,7 +34,7 @@ public class SearchController {
      * @param request Search request with query, mode, pagination parameters
      * @return SearchResponse with results and metadata
      */
-    @PostMapping
+    @PostMapping("/search")
     public ResponseEntity<SearchResponse> search(@Valid @RequestBody SearchRequest request) {
         long startTime = System.currentTimeMillis();
         

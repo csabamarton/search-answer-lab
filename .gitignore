@@ -17,6 +17,11 @@ frontend/.vite/
 frontend/.env
 frontend/.env.local
 
+# MCP Server (Node/TypeScript)
+mcp-server/node_modules/
+mcp-server/dist/
+mcp-server/.env
+
 # IDE
 .vscode/
 .idea/

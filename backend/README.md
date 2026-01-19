@@ -13,6 +13,16 @@ Spring Boot REST API providing both traditional full-text search and semantic ve
 - WebFlux (for embeddings service client)
 - Lombok
 
+## Architecture
+
+This backend is part of a larger system that supports three search access patterns:
+
+- **Traditional Search**: User → React Frontend → Spring Boot Backend → PostgreSQL
+- **Semantic Search**: User → React Frontend → Spring Boot Backend → Embeddings Service → PostgreSQL
+- **MCP Search**: User → Claude Desktop → MCP Server → Spring Boot Backend → Embeddings Service → PostgreSQL
+
+For detailed architecture diagrams, see the [root README](../README.md#-search-use-cases).
+
 ## Project Structure
 
 ```

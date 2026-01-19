@@ -13,6 +13,76 @@ search-answer-lab/
 └── docker-compose.yml    # PostgreSQL with pgvector extension
 ```
 
+## 📊 Search Use Cases
+
+The application supports three different search access patterns:
+
+```mermaid
+flowchart TD
+    subgraph UC1["Use Case 1: Traditional Search (React Frontend)"]
+        direction LR
+        U1[👤 User] -->|"Types query"| RF1[React Frontend<br/>:3000]
+        RF1 -->|"HTTP POST /api/search<br/>mode: traditional"| SB1[Spring Boot Backend<br/>:8080]
+        SB1 -->|"PostgreSQL FTS<br/>tsvector/tsquery"| DB1[(PostgreSQL<br/>:5433)]
+        DB1 -->|"Results"| SB1
+        SB1 -->|"JSON Response"| RF1
+        RF1 -->|"Display results"| U1
+    end
+
+    subgraph UC2["Use Case 2: Semantic Search (React Frontend)"]
+        direction LR
+        U2[👤 User] -->|"Types query"| RF2[React Frontend<br/>:3000]
+        RF2 -->|"HTTP POST /api/search<br/>mode: semantic"| SB2[Spring Boot Backend<br/>:8080]
+        SB2 -->|"POST /embed<br/>Generate vector"| ES[Embeddings Service<br/>Python/FastAPI :8090]
+        ES -->|"384-dim vector"| SB2
+        SB2 -->|"pgvector similarity<br/>cosine distance"| DB2[(PostgreSQL<br/>:5433)]
+        DB2 -->|"Results"| SB2
+        SB2 -->|"JSON Response"| RF2
+        RF2 -->|"Display results"| U2
+    end
+
+    subgraph UC3["Use Case 3: MCP Search (Claude Desktop)"]
+        direction LR
+        U3[👤 User] -->|"Asks question"| CD[Claude Desktop<br/>LLM]
+        CD -->|"MCP tool call<br/>search_docs"| MCP[MCP Server<br/>TypeScript STDIO]
+        MCP -->|"HTTP POST /api/search<br/>mode: semantic"| SB3[Spring Boot Backend<br/>:8080]
+        SB3 -->|"POST /embed<br/>Generate vector"| ES2[Embeddings Service<br/>Python/FastAPI :8090]
+        ES2 -->|"384-dim vector"| SB3
+        SB3 -->|"pgvector similarity<br/>cosine distance"| DB3[(PostgreSQL<br/>:5433)]
+        DB3 -->|"Results"| SB3
+        SB3 -->|"JSON Response"| MCP
+        MCP -->|"Tool result"| CD
+        CD -->|"Synthesized answer"| U3
+    end
+
+    UC1 --> UC2
+    UC2 --> UC3
+
+    style U1 fill:#e1f5ff
+    style U2 fill:#e1f5ff
+    style U3 fill:#e1f5ff
+    style RF1 fill:#61dafb
+    style RF2 fill:#61dafb
+    style SB1 fill:#6db33f
+    style SB2 fill:#6db33f
+    style SB3 fill:#6db33f
+    style DB1 fill:#336791
+    style DB2 fill:#336791
+    style DB3 fill:#336791
+    style ES fill:#ffd43b
+    style ES2 fill:#ffd43b
+    style MCP fill:#3178c6
+    style CD fill:#d97757
+```
+
+### Flow Comparison
+
+| Use Case | Path | Latency | Best For |
+|----------|------|---------|----------|
+| **Traditional** | User → Frontend → Backend → DB | ~11ms | Exact keyword matching, fast results |
+| **Semantic (Frontend)** | User → Frontend → Backend → Embeddings → DB | ~1.5s | Conceptual queries, meaning-based search |
+| **Semantic (MCP)** | User → Claude → MCP → Backend → Embeddings → DB | ~1.5s | Natural language questions, AI-powered search |
+
 ## 🚀 Quick Start
 
 ### Prerequisites

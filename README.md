@@ -9,8 +9,39 @@ search-answer-lab/
 ├── backend/              # Spring Boot REST API (Java 17)
 ├── frontend/             # React + TypeScript + Vite
 ├── embeddings-service/   # Python FastAPI service for embeddings
+├── mcp-server/           # TypeScript MCP server for AI agents (v0.5+)
 └── docker-compose.yml    # PostgreSQL with pgvector extension
 ```
+
+## 📊 Search Use Cases
+
+The application supports three different search access patterns:
+
+### Use Case 1: Traditional Search (React Frontend)
+
+![Traditional Search Flow](docs/usecase-1-traditional.drawio.png)
+
+**Flow:** User → React Frontend → Spring Boot Backend → PostgreSQL Database
+
+### Use Case 2: Semantic Search (React Frontend)
+
+![Semantic Search Flow](docs/usecase-2-semantic.drawio.png)
+
+**Flow:** User → React Frontend → Spring Boot Backend → Embeddings Service → PostgreSQL Database
+
+### Use Case 3: MCP Search (Claude Desktop)
+
+![MCP Search Flow](docs/usecase-3-mcp.drawio.png)
+
+**Flow:** User → Claude Desktop → MCP Server → Spring Boot Backend → Embeddings Service → PostgreSQL Database
+
+### Flow Comparison
+
+| Use Case | Path | Latency | Best For |
+|----------|------|---------|----------|
+| **Traditional** | User → Frontend → Backend → DB | ~11ms | Exact keyword matching, fast results |
+| **Semantic (Frontend)** | User → Frontend → Backend → Embeddings → DB | ~1.5s | Conceptual queries, meaning-based search |
+| **Semantic (MCP)** | User → Claude → MCP → Backend → Embeddings → DB | ~1.5s | Natural language questions, AI-powered search |
 
 ## 🚀 Quick Start
 
@@ -63,6 +94,33 @@ npm run dev
 ```
 
 Frontend runs on `http://localhost:3000`
+
+## 🤖 MCP Integration (v0.5+)
+
+This project includes an MCP (Model Context Protocol) server that allows AI agents like Claude Desktop to search your knowledge base intelligently.
+
+### Quick Start with Claude Desktop
+
+1. **Build and start the MCP server**:
+```bash
+cd mcp-server
+npm install
+npm run build
+```
+
+2. **Configure Claude Desktop** - See [mcp-server/README.md](mcp-server/README.md) for detailed setup instructions
+
+3. **Ask Claude to search**:
+> "Use the search-answer-lab tool to find information about database performance"
+
+### What You Can Do
+
+- ✅ Semantic search via Claude Desktop
+- ✅ Traditional keyword search
+- ✅ Natural language queries
+- ✅ Multi-document synthesis
+
+See [mcp-server/README.md](mcp-server/README.md) for complete documentation.
 
 ### 5. Index Documents (First Time)
 

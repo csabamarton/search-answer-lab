@@ -19,9 +19,10 @@ import java.util.Optional;
  * - POST /oauth/device/code - Initiate device flow
  * - POST /oauth/device/authorize - User authorization
  * - POST /oauth/device/token - Poll for token
+ * - POST /oauth/token - Refresh token (standard OAuth endpoint)
  */
 @RestController
-@RequestMapping("/oauth/device")
+@RequestMapping("/oauth")
 @CrossOrigin(origins = "*") // Allow CORS for device flow
 public class DeviceAuthController {
 
@@ -36,7 +37,7 @@ public class DeviceAuthController {
      * POST /oauth/device/code
      * Initiate device code flow - returns device_code and user_code
      */
-    @PostMapping("/code")
+    @PostMapping("/device/code")
     public ResponseEntity<Map<String, Object>> initiateDeviceFlow() {
         logger.info("Device flow initiation requested");
         DeviceCode deviceCode = deviceAuthService.generateDeviceCode();
@@ -56,7 +57,7 @@ public class DeviceAuthController {
      * POST /oauth/device/authorize
      * User authorizes the device code by entering credentials
      */
-    @PostMapping("/authorize")
+    @PostMapping("/device/authorize")
     public ResponseEntity<Map<String, Object>> authorizeDeviceCode(
             @RequestBody Map<String, String> request) {
         
@@ -98,7 +99,7 @@ public class DeviceAuthController {
      * POST /oauth/device/token
      * Poll for token - MCP server calls this repeatedly until user authorizes
      */
-    @PostMapping("/token")
+    @PostMapping("/device/token")
     public ResponseEntity<Map<String, Object>> pollForToken(
             @RequestBody Map<String, String> request) {
         
@@ -140,10 +141,64 @@ public class DeviceAuthController {
     }
 
     /**
+     * POST /oauth/token
+     * Standard OAuth token endpoint for refreshing tokens
+     * Supports grant_type=refresh_token
+     */
+    @PostMapping("/token")
+    public ResponseEntity<Map<String, Object>> refreshToken(
+            @RequestBody Map<String, String> request) {
+        
+        String grantType = request.get("grant_type");
+        String refreshToken = request.get("refresh_token");
+
+        logger.debug("Token refresh request: grant_type={}", grantType);
+
+        if (!"refresh_token".equals(grantType)) {
+            logger.warn("Invalid grant_type: {}", grantType);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "unsupported_grant_type");
+            error.put("error_description", "Only grant_type=refresh_token is supported");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        if (refreshToken == null) {
+            logger.warn("Token refresh request missing refresh_token");
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "invalid_request");
+            error.put("error_description", "Missing required parameter: refresh_token");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        Optional<DeviceAuthService.TokenResponse> tokenOpt = 
+                deviceAuthService.refreshToken(refreshToken);
+
+        if (tokenOpt.isEmpty()) {
+            logger.warn("Token refresh failed: invalid or expired refresh token");
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "invalid_grant");
+            error.put("error_description", "The refresh token is invalid or expired");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
+        DeviceAuthService.TokenResponse tokenResponse = tokenOpt.get();
+        logger.info("Token refreshed successfully");
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("access_token", tokenResponse.getAccessToken());
+        response.put("refresh_token", tokenResponse.getRefreshToken());
+        response.put("token_type", tokenResponse.getTokenType());
+        response.put("expires_in", tokenResponse.getExpiresIn());
+        response.put("scope", String.join(" ", tokenResponse.getScopes()));
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * GET /oauth/device/status?user_code=XXXX-YYYY
      * Debug endpoint to check device code status (dev only)
      */
-    @GetMapping("/status")
+    @GetMapping("/device/status")
     public ResponseEntity<Map<String, Object>> getDeviceCodeStatus(
             @RequestParam("user_code") String userCode) {
         

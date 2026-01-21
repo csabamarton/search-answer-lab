@@ -54,10 +54,10 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 
 ---
 
-### Phase 2: MCP Server Integration 🔄 IN PROGRESS
-**Status:** Step 4 starting
+### Phase 2: MCP Server Integration ✅ COMPLETE
+**Status:** Step 4 completed
 
-#### Step 4: Create DeviceAuthManager (TypeScript) 📋 DETAILED PLAN BELOW
+#### Step 4: Create DeviceAuthManager (TypeScript) ✅
 - TypeScript class to manage device flow
 - Token storage (file-based for demo)
 - Token refresh logic
@@ -112,22 +112,45 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 3. Token expiry (auto-refresh)
 4. Invalid token (re-authentication)
 
-#### Step 5: Update MCP Tools
-- Modify `search_docs` tool to use tokens
-- Add `Authorization: Bearer <token>` header
-- Handle authentication errors gracefully
-- Show device flow prompts in Claude UI
+#### Step 5: Update MCP Tools ✅
+- ✅ Modified `search_docs` tool to use tokens
+- ✅ Added `Authorization: Bearer <token>` header
+- ✅ Handle authentication errors gracefully
+- ✅ Non-blocking authentication with immediate error return
+- ✅ Pending device code tracking and reuse
+- ✅ Automatic authorization detection
 
 ---
 
-### Phase 3: User Experience & Audit 📋 PLANNED
-**Status:** Not started
+### Phase 3: User Experience & Audit 🔄 IN PROGRESS
+**Status:** Step 6 planned and ready for implementation
 
-#### Step 6: Build Authorization Page
-- HTML page for device code entry
-- User-friendly authorization flow
-- Scope display
-- Success/error messages
+#### Step 6: Build Authorization Page & Fix Tool Response 📋 READY
+**Status:** Detailed plan complete - ready to implement  
+**See:** `STEP_6_AUTHORIZATION_PAGE.md` for complete implementation guide
+
+**What Step 6 Includes:**
+1. **Fix MCP Tool Response** (Part 1)
+   - Return auth instructions instead of throwing error
+   - Make device code and URL visible in Claude Desktop
+   - Format message with clickable link
+
+2. **Build Authorization Page** (Part 2)
+   - HTML page with Thymeleaf template
+   - Pre-filled device code from URL parameter
+   - Form submission to authorize
+   - Success/error messages
+   - Countdown timer
+
+**Current Problem:**
+- Claude Desktop shows generic "There was an error" message
+- User must check MCP logs to find device code and URL
+- Poor user experience
+
+**After Step 6:**
+- Claude shows clear auth instructions with clickable link
+- Authorization page pre-fills code from URL
+- Professional, user-friendly flow
 
 #### Step 7: Implement Audit Logging
 - Audit events table
@@ -174,9 +197,23 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 **Modified Files:**
 - `src/main/java/com/searchlab/config/SecurityConfig.java` - JWT security configuration
 - `src/main/java/com/searchlab/controller/SearchController.java` - Added @PreAuthorize
+- `src/main/java/com/searchlab/controller/DeviceAuthController.java` - Added refresh token endpoint
+- `src/main/java/com/searchlab/service/DeviceAuthService.java` - Added refresh token method
 - `pom.xml` - Added Spring Security OAuth and JWT dependencies
 - `src/main/resources/application.yml` - JWT configuration, logging settings
 - `postman-collections/Search-Answer-Lab-API.postman_collection.json` - Added OAuth and authenticated search endpoints
+
+### MCP Server (TypeScript)
+
+**New Files:**
+- `src/types/auth.ts` - Type definitions for OAuth authentication
+- `src/auth/TokenStorage.ts` - Token storage utility (file-based)
+- `src/auth/DeviceAuthManager.ts` - Main authentication manager
+
+**Modified Files:**
+- `src/tools/searchDocs.ts` - Integrated authentication before search requests
+- `src/backendClient.ts` - Added Authorization header support
+- `src/server.ts` - Updated error handling
 
 ---
 
@@ -186,6 +223,14 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 1. **Initiate Flow:** `POST /oauth/device/code` → Returns `device_code`, `user_code`, `verification_uri`
 2. **Authorize:** `POST /oauth/device/authorize` → User enters code + credentials
 3. **Poll for Token:** `POST /oauth/device/token` → Returns `access_token` and `refresh_token`
+4. **Refresh Token:** `POST /oauth/token` (grant_type=refresh_token) → Returns new access and refresh tokens
+
+### MCP Server Authentication Features
+- **Non-blocking mode:** Returns immediately with device code instructions instead of blocking
+- **Pending device code tracking:** Reuses same device code across multiple requests
+- **Automatic authorization detection:** Checks if device code was authorized before returning error
+- **Token persistence:** Stores tokens in `~/.search-answer-lab/tokens.json`
+- **Automatic token refresh:** Refreshes expired tokens before expiry (5-minute buffer)
 
 ### JWT Token Structure
 - **Access Token:** 1 hour expiry, contains `userId` and `scopes` (`docs:search`, `docs:read`)
@@ -212,11 +257,19 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 - [x] Protected endpoint accepts authenticated requests (200)
 - [x] Scope-based authorization works
 
+### ✅ Completed Tests (Phase 2)
+- [x] MCP server integration working
+- [x] End-to-end flow from Claude Desktop
+- [x] Device code flow with non-blocking mode
+- [x] Token storage and retrieval
+- [x] Pending device code tracking and reuse
+- [x] Automatic authorization detection after user authenticates
+
 ### 📋 Remaining Tests
-- [ ] Token expiry and auto-refresh
-- [ ] Token revocation
-- [ ] MCP server integration
-- [ ] End-to-end flow from Claude Desktop
+- [ ] Token expiry and auto-refresh (manual testing needed)
+- [ ] Token revocation (no mechanism yet)
+- [ ] Authorization page functionality (Step 6 - after implementation)
+- [ ] End-to-end flow with authorization page
 
 ---
 
@@ -227,37 +280,37 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 - JWT validation working
 - Endpoints protected with scope-based authorization
 
-**Phase 2: NEXT** 🔄
-- Need to implement TypeScript `DeviceAuthManager` in MCP server
-- Update MCP tools to use authentication
-- Test complete flow from Claude Desktop
+**Phase 2: COMPLETE** ✅
+- ✅ TypeScript `DeviceAuthManager` implemented in MCP server
+- ✅ MCP tools updated to use authentication
+- ✅ Complete flow from Claude Desktop tested and working
+- ✅ Non-blocking authentication with pending device code reuse
 
-**Phase 3 & 4: PLANNED** 📋
-- Authorization page (HTML)
-- Audit logging
+**Phase 3: IN PROGRESS** 🔄
+- Step 6: Authorization page & tool response fix (detailed plan ready)
+- Step 7: Audit logging (planned)
+
+**Phase 4: PLANNED** 📋
 - End-to-end testing and documentation
 
 ---
 
 ## 🚀 Next Steps
 
-1. **Step 4:** Create `DeviceAuthManager.ts` in MCP server
-   - Implement device code flow initiation
-   - Token storage and refresh logic
-   - Integration with backend OAuth endpoints
-
-2. **Step 5:** Update MCP `search_docs` tool
-   - Add authentication header
-   - Handle device flow prompts
-   - Error handling for auth failures
-
-3. **Step 6:** Build authorization page (optional but recommended)
+1. **Step 6:** Build authorization page (recommended for better UX)
    - HTML form for device code entry
-   - Better UX than Postman
+   - User-friendly authorization flow
+   - Better UX than Postman/command line
 
-4. **Step 7:** Audit logging
-   - Track all tool calls
+2. **Step 7:** Implement Audit Logging
+   - Audit events table
+   - Track all tool calls with userId, toolName, query, resultCount, timestamp
    - Security monitoring
+
+3. **Step 8:** End-to-End Testing & Documentation
+   - Test token expiry and auto-refresh
+   - Test token revocation
+   - Write comprehensive documentation
 
 ---
 
@@ -296,14 +349,18 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 ```
 Claude Desktop (LLM)
    ↓
-MCP Server (TypeScript) - [Step 4-5: Will authenticate here]
+MCP Server (TypeScript) - [✅ Phase 2: Authentication Complete]
+   ├── DeviceAuthManager - Handles OAuth Device Code Flow
+   ├── TokenStorage - Persists tokens to disk
+   └── search_docs tool - Authenticated requests
    ↓
-Spring Boot Backend :8080 - [Step 1-3: ✅ Complete]
-   ├── OAuth Device Flow Endpoints
+Spring Boot Backend :8080 - [✅ Phase 1: OAuth Infrastructure Complete]
+   ├── OAuth Device Flow Endpoints (/oauth/device/*)
+   ├── Token Refresh Endpoint (/oauth/token)
    ├── JWT Token Validation
-   └── Protected Search Endpoint
+   └── Protected Search Endpoint (/api/search)
    ↓
-PostgreSQL :5433 - [Step 7: Audit logging planned]
+PostgreSQL :5433 - [📋 Step 7: Audit logging planned]
 ```
 
 ---
@@ -449,5 +506,11 @@ TOKEN_STORAGE_PATH=~/.search-answer-lab/tokens.json
 ---
 
 **Last Updated:** January 21, 2025  
-**Current Phase:** Phase 1 Complete, Phase 2 Starting (Step 4)  
-**Next Action:** Implement Step 4 (DeviceAuthManager in MCP server)
+**Current Phase:** Phase 1 & 2 Complete ✅, Phase 3 Starting (Step 6 ready)  
+**Next Action:** Implement Step 6 - See `STEP_6_AUTHORIZATION_PAGE.md` for detailed plan
+
+**Implementation Notes:**
+- Core authentication architecture is complete and working
+- Current limitation: Authentication error messages hidden by Claude Desktop
+- Step 6 will fix UX by returning instructions instead of errors
+- Authorization page will make device code entry user-friendly

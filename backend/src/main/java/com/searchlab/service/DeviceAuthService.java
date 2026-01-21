@@ -240,6 +240,50 @@ public class DeviceAuthService {
     }
 
     /**
+     * Refresh access token using refresh token
+     * @return TokenResponse with new access and refresh tokens, or empty if refresh token is invalid/expired
+     */
+    @Transactional
+    public Optional<TokenResponse> refreshToken(String refreshToken) {
+        logger.debug("Refreshing token");
+        
+        try {
+            // Validate refresh token
+            if (jwtService.isTokenExpired(refreshToken)) {
+                logger.warn("Refresh token expired");
+                return Optional.empty();
+            }
+            
+            if (!jwtService.isRefreshToken(refreshToken)) {
+                logger.warn("Token is not a refresh token");
+                return Optional.empty();
+            }
+            
+            // Extract user ID from refresh token
+            String userId = jwtService.extractUserId(refreshToken);
+            logger.info("Refresh token valid, generating new tokens: user_id={}", userId);
+            
+            // Generate new tokens with same scopes (default scopes for now)
+            List<String> scopes = List.of("docs:search", "docs:read");
+            String newAccessToken = jwtService.generateAccessToken(userId, scopes);
+            String newRefreshToken = jwtService.generateRefreshToken(userId);
+            
+            logger.info("Tokens refreshed successfully: user_id={}", userId);
+            
+            return Optional.of(new TokenResponse(
+                    newAccessToken,
+                    newRefreshToken,
+                    "Bearer",
+                    3600, // expires_in
+                    scopes
+            ));
+        } catch (Exception e) {
+            logger.error("Error refreshing token: {}", e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Response DTO for token polling
      */
     public static class TokenResponse {

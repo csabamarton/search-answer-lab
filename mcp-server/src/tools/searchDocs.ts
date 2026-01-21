@@ -99,22 +99,35 @@ export async function handleSearchDocs(args: any): Promise<any> {
     } catch (authError: any) {
       console.error(`[AUTH] Authentication error: ${authError.message}`, authError);
       if (authError instanceof AuthError) {
-        // If device code info is provided, return user-friendly message as a formatted error
+        // If device code info is provided, return user-friendly message as tool response (NOT error)
         if (authError.deviceCodeInfo) {
-          const { userCode, verificationUri } = authError.deviceCodeInfo;
-          const authMessage = 
-            `🔐 AUTHENTICATION REQUIRED\n\n` +
-            `To search the knowledge base, please authenticate first:\n\n` +
-            `📍 Visit: ${verificationUri}\n` +
-            `🔑 Enter code: ${userCode}\n\n` +
-            `⏳ After authenticating, try the search again.\n\n` +
-            `(The device code expires in 10 minutes)`;
+          const { userCode, verificationUri, expiresIn } = authError.deviceCodeInfo;
           
-          // Throw error with a very clear message that Claude Desktop will show
-          const error = new Error(authMessage);
-          // Ensure it's not a generic error by making it clearly identifiable
-          (error as any).code = "AUTHENTICATION_REQUIRED";
-          throw error;
+          // Transform backend URL (port 8080) to frontend URL (port 3000) for React app
+          // Backend returns: http://localhost:8080/oauth/device/authorize
+          // Frontend runs on: http://localhost:3000/oauth/device/authorize
+          const frontendUrl = verificationUri.replace(':8080', ':3000');
+          
+          // Format URL with code as query parameter for pre-filling in authorization page
+          const urlWithCode = `${frontendUrl}?code=${userCode}`;
+          
+          const authMessage = 
+            `I need authorization to search your knowledge base.\n\n` +
+            `Please follow these steps:\n\n` +
+            `1. Visit this link: ${urlWithCode}\n` +
+            `2. Review the permissions shown\n` +
+            `3. Click "Authorize"\n\n` +
+            `This code expires in ${Math.floor(expiresIn / 60)} minutes.\n\n` +
+            `Once you've authorized, ask me to search again and I'll use the stored credentials.`;
+          
+          // Return as successful tool response instead of throwing error
+          // This makes Claude Desktop show the full message instead of "There was an error"
+          return {
+            content: [{
+              type: "text",
+              text: authMessage
+            }]
+          };
         }
         
         if (!authError.shouldRetry) {

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import SearchPage from './pages/SearchPage'
+import AuthorizationPage from './pages/AuthorizationPage'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 
@@ -14,6 +15,7 @@ function App() {
         <main className="flex-grow container mx-auto px-4 py-8">
           <Routes>
             <Route path="/" element={<SearchPage />} />
+            <Route path="/oauth/device/authorize" element={<AuthorizationPage />} />
           </Routes>
         </main>
         <Footer />

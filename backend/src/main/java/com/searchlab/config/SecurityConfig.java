@@ -53,6 +53,7 @@ public class SecurityConfig {
                 .requestMatchers("/oauth/**").permitAll()
                 .requestMatchers("/test/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/error").permitAll() // Allow error page access
                 
                 // Protected endpoints - require fully authenticated (non-anonymous) user
                 .requestMatchers("/api/search").fullyAuthenticated()

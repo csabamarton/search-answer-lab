@@ -70,6 +70,13 @@ export async function createMcpServer(): Promise<Server> {
     if (request.params.name === "search_docs") {
       try {
         const result = await handleSearchDocs(request.params.arguments || {});
+        
+        // If result already has content array (e.g., from auth instructions), return it directly
+        if (result && typeof result === "object" && "content" in result && Array.isArray(result.content)) {
+          return result;
+        }
+        
+        // Otherwise, wrap result in content array (normal search results)
         return {
           content: [
             {

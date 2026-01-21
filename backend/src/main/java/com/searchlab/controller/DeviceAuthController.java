@@ -23,7 +23,7 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/oauth")
-@CrossOrigin(origins = "*") // Allow CORS for device flow
+// CORS is handled globally by CorsConfig
 public class DeviceAuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(DeviceAuthController.class);
@@ -54,17 +54,36 @@ public class DeviceAuthController {
     }
 
     /**
-     * POST /oauth/device/authorize
-     * User authorizes the device code by entering credentials
+     * POST /oauth/device/authorize (JSON)
+     * User authorizes the device code by entering credentials via JSON
      */
-    @PostMapping("/device/authorize")
-    public ResponseEntity<Map<String, Object>> authorizeDeviceCode(
+    @PostMapping(value = "/device/authorize", consumes = "application/json")
+    public ResponseEntity<Map<String, Object>> authorizeDeviceCodeJson(
             @RequestBody Map<String, String> request) {
-        
-        String userCode = request.get("user_code");
-        String username = request.get("username");
-        String password = request.get("password");
+        return authorizeDeviceCodeInternal(
+                request.get("user_code"),
+                request.get("username"),
+                request.get("password"));
+    }
 
+    /**
+     * POST /oauth/device/authorize (Form)
+     * User authorizes the device code by entering credentials via form
+     */
+    @PostMapping(value = "/device/authorize", consumes = "application/x-www-form-urlencoded")
+    public ResponseEntity<Map<String, Object>> authorizeDeviceCodeForm(
+            @RequestParam String user_code,
+            @RequestParam String username,
+            @RequestParam String password) {
+        return authorizeDeviceCodeInternal(user_code, username, password);
+    }
+
+    /**
+     * Internal method to handle authorization logic for both JSON and form submissions
+     */
+    private ResponseEntity<Map<String, Object>> authorizeDeviceCodeInternal(
+            String userCode, String username, String password) {
+        
         logger.info("Authorization request received: user_code={}, username={}", userCode, username);
 
         if (userCode == null || username == null || password == null) {

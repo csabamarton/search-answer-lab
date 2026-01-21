@@ -122,35 +122,46 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 
 ---
 
-### Phase 3: User Experience & Audit 🔄 IN PROGRESS
-**Status:** Step 6 planned and ready for implementation
+### Phase 3: User Experience & Audit ✅ COMPLETE (Step 6)
+**Status:** Step 6 implemented and tested successfully
 
-#### Step 6: Build Authorization Page & Fix Tool Response 📋 READY
-**Status:** Detailed plan complete - ready to implement  
-**See:** `STEP_6_AUTHORIZATION_PAGE.md` for complete implementation guide
+#### Step 6: Build Authorization Page & Fix Tool Response ✅ COMPLETE
+**Status:** Implemented and working  
+**Completed:** January 21, 2025
 
-**What Step 6 Includes:**
-1. **Fix MCP Tool Response** (Part 1)
-   - Return auth instructions instead of throwing error
-   - Make device code and URL visible in Claude Desktop
-   - Format message with clickable link
+**What Step 6 Implemented:**
 
-2. **Build Authorization Page** (Part 2)
-   - HTML page with Thymeleaf template
-   - Pre-filled device code from URL parameter
-   - Form submission to authorize
-   - Success/error messages
-   - Countdown timer
+1. **Fixed MCP Tool Response** ✅
+   - Updated `searchDocs.ts` to return formatted auth instructions instead of throwing error
+   - Transforms backend URL (port 8080) to frontend URL (port 3000)
+   - Claude Desktop now shows full authentication instructions with clickable link
+   - Message format: Clear step-by-step instructions with URL containing `?code=` parameter
 
-**Current Problem:**
-- Claude Desktop shows generic "There was an error" message
-- User must check MCP logs to find device code and URL
-- Poor user experience
+2. **Built React Authorization Page** ✅
+   - Created `AuthorizationPage.tsx` React component (replaced Thymeleaf approach)
+   - Pre-fills device code from URL parameter (`?code=XXXX-XXXX`)
+   - Username and password input fields
+   - Real-time countdown timer (10 minutes)
+   - Success/error message display
+   - Styled with Tailwind CSS to match existing frontend design
+   - Added route `/oauth/device/authorize` to React app
 
-**After Step 6:**
-- Claude shows clear auth instructions with clickable link
-- Authorization page pre-fills code from URL
-- Professional, user-friendly flow
+3. **Backend Updates** ✅
+   - Updated `DeviceAuthController` to accept both JSON and form-urlencoded data
+   - Fixed CORS configuration (removed conflicting `@CrossOrigin` annotation)
+   - Added `/error` to public endpoints in SecurityConfig
+   - Updated CORS config to include `/oauth/**` endpoints
+
+4. **MCP Server Updates** ✅
+   - Updated `server.ts` to handle content array responses directly
+   - URL transformation from backend port to frontend port
+
+**Result:**
+- ✅ Claude Desktop shows clear auth instructions (no more "There was an error")
+- ✅ User clicks link → React authorization page opens with pre-filled code
+- ✅ User authorizes → Success message appears
+- ✅ Subsequent searches work automatically with stored tokens
+- ✅ Smooth, professional user experience
 
 #### Step 7: Implement Audit Logging
 - Audit events table
@@ -211,9 +222,18 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 - `src/auth/DeviceAuthManager.ts` - Main authentication manager
 
 **Modified Files:**
-- `src/tools/searchDocs.ts` - Integrated authentication before search requests
+- `src/tools/searchDocs.ts` - Integrated authentication, returns auth instructions instead of errors
 - `src/backendClient.ts` - Added Authorization header support
-- `src/server.ts` - Updated error handling
+- `src/server.ts` - Updated to handle content array responses for auth instructions
+
+### Frontend (React/TypeScript)
+
+**New Files:**
+- `src/pages/AuthorizationPage.tsx` - Device code authorization page component
+- `src/services/authService.ts` - OAuth device code authorization API service
+
+**Modified Files:**
+- `src/App.tsx` - Added route for `/oauth/device/authorize`
 
 ---
 
@@ -265,11 +285,19 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 - [x] Pending device code tracking and reuse
 - [x] Automatic authorization detection after user authenticates
 
+### ✅ Completed Tests (Phase 3 - Step 6)
+- [x] Authorization instructions visible in Claude Desktop
+- [x] Frontend URL transformation (port 8080 → 3000)
+- [x] React authorization page loads correctly
+- [x] Device code pre-filled from URL parameter
+- [x] Authorization form submission works
+- [x] Success message displayed after authorization
+- [x] Subsequent searches work without re-authentication
+- [x] End-to-end flow tested successfully
+
 ### 📋 Remaining Tests
 - [ ] Token expiry and auto-refresh (manual testing needed)
 - [ ] Token revocation (no mechanism yet)
-- [ ] Authorization page functionality (Step 6 - after implementation)
-- [ ] End-to-end flow with authorization page
 
 ---
 
@@ -286,8 +314,8 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 - ✅ Complete flow from Claude Desktop tested and working
 - ✅ Non-blocking authentication with pending device code reuse
 
-**Phase 3: IN PROGRESS** 🔄
-- Step 6: Authorization page & tool response fix (detailed plan ready)
+**Phase 3: COMPLETE** ✅ (Step 6)
+- ✅ Step 6: Authorization page & tool response fix (implemented with React frontend)
 - Step 7: Audit logging (planned)
 
 **Phase 4: PLANNED** 📋
@@ -297,20 +325,21 @@ Implement OAuth 2.0 Device Code Flow (RFC 8628) so that:
 
 ## 🚀 Next Steps
 
-1. **Step 6:** Build authorization page (recommended for better UX)
-   - HTML form for device code entry
-   - User-friendly authorization flow
-   - Better UX than Postman/command line
-
-2. **Step 7:** Implement Audit Logging
+1. **Step 7:** Implement Audit Logging (Optional)
    - Audit events table
    - Track all tool calls with userId, toolName, query, resultCount, timestamp
    - Security monitoring
 
-3. **Step 8:** End-to-End Testing & Documentation
+2. **Step 8:** End-to-End Testing & Documentation
    - Test token expiry and auto-refresh
    - Test token revocation
    - Write comprehensive documentation
+
+3. **Future Enhancements:**
+   - Token revocation endpoint
+   - Multiple user support
+   - Admin dashboard for viewing audit logs
+   - Token refresh UI improvements
 
 ---
 
@@ -506,11 +535,13 @@ TOKEN_STORAGE_PATH=~/.search-answer-lab/tokens.json
 ---
 
 **Last Updated:** January 21, 2025  
-**Current Phase:** Phase 1 & 2 Complete ✅, Phase 3 Starting (Step 6 ready)  
-**Next Action:** Implement Step 6 - See `STEP_6_AUTHORIZATION_PAGE.md` for detailed plan
+**Current Phase:** Phase 1, 2, and Step 6 Complete ✅  
+**Next Action:** Step 7 - Implement Audit Logging (optional)
 
 **Implementation Notes:**
 - Core authentication architecture is complete and working
-- Current limitation: Authentication error messages hidden by Claude Desktop
-- Step 6 will fix UX by returning instructions instead of errors
-- Authorization page will make device code entry user-friendly
+- Step 6 implemented: Authentication instructions now visible in Claude Desktop
+- React authorization page provides smooth user experience
+- End-to-end flow tested and working: Auth → Search → Results
+- Frontend runs on port 3000, backend on port 8080
+- MCP server transforms URLs from backend to frontend automatically

@@ -450,13 +450,18 @@
 					"name": "Traditional",
 					"item": [
 						{
-							"name": "Traditional Search",
+							"name": "Traditional Search (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"description": "JWT access token (automatically set by OAuth Device Code Flow)"
 									}
 								],
 								"body": {
@@ -473,18 +478,50 @@
 										"search"
 									]
 								},
-								"description": "Execute a traditional full-text search query using PostgreSQL FTS. Returns paginated results with relevance scores."
+								"description": "Execute a traditional full-text search query using PostgreSQL FTS. Requires JWT token with 'docs:search' scope. Returns paginated results with relevance scores. Token is automatically included from collection variable."
 							},
 							"response": []
 						},
 						{
-							"name": "Traditional Search - Minimal",
+							"name": "Traditional Search (Unauthenticated - Should Fail)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"database\",\n  \"mode\": \"traditional\",\n  \"page\": 0,\n  \"pageSize\": 10\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Test endpoint - should return 401 Unauthorized since no token is provided. This demonstrates that /api/search is now protected."
+							},
+							"response": []
+						},
+						{
+							"name": "Traditional Search - Minimal (Authenticated)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -506,13 +543,17 @@
 							"response": []
 						},
 						{
-							"name": "Traditional Search - Pagination",
+							"name": "Traditional Search - Pagination (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -529,18 +570,22 @@
 										"search"
 									]
 								},
-								"description": "Search request with pagination (page 0, pageSize 5) and trace ID for tracking."
+								"description": "Search request with pagination (page 0, pageSize 5) and trace ID for tracking. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Traditional Search - Multi-word",
+							"name": "Traditional Search - Multi-word (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -557,24 +602,28 @@
 										"search"
 									]
 								},
-								"description": "Search with multiple words. All words must be present in the results (AND operator)."
+								"description": "Search with multiple words. All words must be present in the results (AND operator). Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						}
 					],
-					"description": "Traditional full-text search endpoints using PostgreSQL FTS (tsvector/tsquery)"
+					"description": "Traditional full-text search endpoints using PostgreSQL FTS (tsvector/tsquery). All endpoints require JWT authentication with 'docs:search' scope. Use the OAuth Device Code Flow to obtain an access token first."
 				},
 				{
 					"name": "Semantic",
 					"item": [
 						{
-							"name": "Semantic Search",
+							"name": "Semantic Search (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -591,18 +640,22 @@
 										"search"
 									]
 								},
-								"description": "Execute a semantic search query using vector embeddings. Returns results based on semantic similarity rather than keyword matching. Falls back to traditional search if embeddings service is unavailable."
+								"description": "Execute a semantic search query using vector embeddings. Returns results based on semantic similarity rather than keyword matching. Falls back to traditional search if embeddings service is unavailable. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Semantic Search - Minimal",
+							"name": "Semantic Search - Minimal (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -619,18 +672,22 @@
 										"search"
 									]
 								},
-								"description": "Minimal semantic search request. Uses default mode (traditional) if mode not specified, so explicitly set mode to semantic."
+								"description": "Minimal semantic search request. Uses default mode (traditional) if mode not specified, so explicitly set mode to semantic. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Semantic Search - Pagination",
+							"name": "Semantic Search - Pagination (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -647,18 +704,22 @@
 										"search"
 									]
 								},
-								"description": "Semantic search with pagination. Returns top 5 most semantically similar results."
+								"description": "Semantic search with pagination. Returns top 5 most semantically similar results. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Semantic Search - Conceptual Query",
+							"name": "Semantic Search - Conceptual Query (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -675,15 +736,15 @@
 										"search"
 									]
 								},
-								"description": "Semantic search with a conceptual query. Semantic search excels at finding documents that match the meaning/intent even if they don't contain exact keywords."
+								"description": "Semantic search with a conceptual query. Semantic search excels at finding documents that match the meaning/intent even if they don't contain exact keywords. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						}
 					],
-					"description": "Semantic search endpoints using vector embeddings (pgvector). Requires embeddings service to be running."
+					"description": "Semantic search endpoints using vector embeddings (pgvector). Requires embeddings service to be running. All endpoints require JWT authentication with 'docs:search' scope. Use the OAuth Device Code Flow to obtain an access token first."
 				}
 			],
-			"description": "Search endpoints for both traditional (FTS) and semantic (vector) search"
+			"description": "Search endpoints for both traditional (FTS) and semantic (vector) search. All endpoints require JWT authentication with 'docs:search' scope. Tokens are automatically included from collection variables if you've completed the OAuth Device Code Flow."
 		},
 		{
 			"name": "Admin",

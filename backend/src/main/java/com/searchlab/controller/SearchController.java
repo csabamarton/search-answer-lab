@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,11 +31,13 @@ public class SearchController {
 
     /**
      * Execute search query.
+     * Requires JWT token with 'docs:search' scope.
      * 
      * @param request Search request with query, mode, pagination parameters
      * @return SearchResponse with results and metadata
      */
     @PostMapping("/search")
+    @PreAuthorize("hasAuthority('docs:search')")
     public ResponseEntity<SearchResponse> search(@Valid @RequestBody SearchRequest request) {
         long startTime = System.currentTimeMillis();
         

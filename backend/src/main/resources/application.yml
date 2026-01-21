@@ -56,9 +56,9 @@ spring:
       minimum-idle: 2
       connection-timeout: 30000
 
-  # Enable SQL logging in dev
+  # Disable SQL logging in dev (use application logging instead)
   jpa:
-    show-sql: true
+    show-sql: false
 
 # Embeddings service configuration (root level, not under spring:)
 embeddings:
@@ -69,5 +69,16 @@ embeddings:
 logging:
   level:
     com.searchlab: DEBUG
+    com.searchlab.service.DeviceAuthService: DEBUG
+    com.searchlab.controller.DeviceAuthController: DEBUG
     org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: WARN  # Only log SQL errors, not all queries
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN  # Suppress parameter binding logs
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-key-for-development-only-min-256-bits-required}
+  access-token:
+    expiry: 3600  # 1 hour in seconds
+  refresh-token:
+    expiry: 2592000  # 30 days in seconds

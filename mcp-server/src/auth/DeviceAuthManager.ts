@@ -495,8 +495,61 @@ export class DeviceAuthManager {
 
   /**
    * Clear stored tokens (logout).
+   * Only clears local tokens, does not revoke on server.
    */
   async logout(): Promise<void> {
     await clearTokens();
+    this.pendingDeviceCode = null;
+  }
+
+  /**
+   * Revoke access tokens (server-side revocation + local cleanup).
+   * Calls backend revocation endpoint and clears local tokens.
+   */
+  async revokeAccess(): Promise<void> {
+    console.error("[DeviceAuthManager] Revoking access...");
+    
+    try {
+      // Get current tokens
+      const storedTokens = await loadTokens();
+      
+      if (storedTokens && storedTokens.accessToken) {
+        // Try to revoke on server-side (best effort)
+        try {
+          const response = await fetch(`${this.backendUrl}/oauth/revoke`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${storedTokens.accessToken}`,
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (response.ok) {
+            console.error("[DeviceAuthManager] ✅ Token revoked on server");
+          } else {
+            console.error(`[DeviceAuthManager] ⚠️ Server revocation returned ${response.status}, continuing with local cleanup`);
+          }
+        } catch (error: any) {
+          // Continue with local cleanup even if server request fails
+          console.error(`[DeviceAuthManager] ⚠️ Server revocation failed: ${error.message}, continuing with local cleanup`);
+        }
+      }
+      
+      // Always clear local tokens
+      await clearTokens();
+      this.pendingDeviceCode = null;
+      
+      console.error("[DeviceAuthManager] ✅ Access revoked - local tokens cleared");
+    } catch (error: any) {
+      console.error(`[DeviceAuthManager] ❌ Error during revocation: ${error.message}`);
+      // Still try to clear local tokens
+      try {
+        await clearTokens();
+        this.pendingDeviceCode = null;
+      } catch (clearError: any) {
+        console.error(`[DeviceAuthManager] ❌ Failed to clear tokens: ${clearError.message}`);
+      }
+      throw error;
+    }
   }
 }

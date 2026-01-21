@@ -214,6 +214,59 @@ public class DeviceAuthController {
     }
 
     /**
+     * POST /oauth/revoke
+     * Revoke access tokens (RFC 7009 compliant)
+     * Accepts access_token or refresh_token in Authorization header or request body
+     */
+    @PostMapping("/revoke")
+    public ResponseEntity<Map<String, Object>> revokeToken(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody(required = false) Map<String, String> requestBody) {
+        
+        String token = null;
+        String tokenTypeHint = null;
+        
+        // Extract token from Authorization header or request body
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7).trim();
+        } else if (requestBody != null) {
+            token = requestBody.get("token");
+            tokenTypeHint = requestBody.get("token_type_hint");
+        }
+        
+        logger.debug("Token revocation request: tokenTypeHint={}", tokenTypeHint);
+        
+        if (token == null || token.isEmpty()) {
+            logger.warn("Token revocation request missing token");
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "invalid_request");
+            error.put("error_description", "Missing required parameter: token or Authorization header");
+            return ResponseEntity.badRequest().body(error);
+        }
+        
+        try {
+            // Validate token and extract user ID
+            String userId = deviceAuthService.revokeToken(token);
+            
+            logger.info("Token revoked successfully: userId={}", userId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Token revoked successfully");
+            response.put("userId", userId);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.warn("Token revocation failed: {}", e.getMessage());
+            // RFC 7009: Always return 200 OK even if token is invalid/expired
+            // This prevents token enumeration attacks
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Token revoked (or already invalid)");
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    /**
      * GET /oauth/device/status?user_code=XXXX-YYYY
      * Debug endpoint to check device code status (dev only)
      */

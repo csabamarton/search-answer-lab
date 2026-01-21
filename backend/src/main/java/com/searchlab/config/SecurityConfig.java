@@ -57,6 +57,7 @@ public class SecurityConfig {
                 
                 // Protected endpoints - require fully authenticated (non-anonymous) user
                 .requestMatchers("/api/search").fullyAuthenticated()
+                // Admin endpoints - require authentication (future: add admin scope check)
                 .requestMatchers("/api/admin/**").fullyAuthenticated()
                 
                 // All other requests require authentication

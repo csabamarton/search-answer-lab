@@ -27,6 +27,7 @@ public class DeviceAuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final UserService userService;
+    private final AuditService auditService;
 
     @Value("${server.port:8080}")
     private int serverPort;
@@ -43,11 +44,13 @@ public class DeviceAuthService {
             DeviceCodeRepository deviceCodeRepository,
             UserRepository userRepository,
             JwtService jwtService,
-            UserService userService) {
+            UserService userService,
+            AuditService auditService) {
         this.deviceCodeRepository = deviceCodeRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.userService = userService;
+        this.auditService = auditService;
     }
 
     /**
@@ -78,6 +81,9 @@ public class DeviceAuthService {
         logger.info("Device code generated: user_code={}, device_code={}, expires_at={}", 
                 userCode, deviceCode, saved.getExpiresAt());
         
+        // Log audit event
+        auditService.logDeviceCodeRequest(userCode, deviceCode);
+        
         return saved;
     }
 
@@ -100,18 +106,21 @@ public class DeviceAuthService {
         Optional<DeviceCode> codeOpt = deviceCodeRepository.findByUserCode(userCode);
         if (codeOpt.isEmpty()) {
             logger.warn("Device code not found: user_code={}", userCode);
+            auditService.logAuthFailure("auth_authorize", "Invalid user code");
             return new AuthorizationResult(false, "Invalid user code");
         }
 
         DeviceCode code = codeOpt.get();
         if (code.isExpired()) {
             logger.warn("Device code expired: user_code={}, expires_at={}", userCode, code.getExpiresAt());
+            auditService.logAuthFailure("auth_authorize", "Device code expired");
             return new AuthorizationResult(false, "Device code expired");
         }
 
         if (code.isAuthorized()) {
             logger.warn("Device code already authorized: user_code={}, authorized_at={}", 
                     userCode, code.getAuthorizedAt());
+            auditService.logAuthFailure("auth_authorize", "Device code already authorized");
             return new AuthorizationResult(false, "Device code already authorized");
         }
 
@@ -120,6 +129,7 @@ public class DeviceAuthService {
         Optional<User> authenticatedUser = userService.authenticate(username, password);
         if (authenticatedUser.isEmpty()) {
             logger.warn("Authentication failed: username={}", username);
+            auditService.logAuthFailure("auth_authorize", "Invalid username or password");
             return new AuthorizationResult(false, "Invalid username or password");
         }
 
@@ -133,6 +143,9 @@ public class DeviceAuthService {
 
         logger.info("Device code authorized successfully: user_code={}, user_id={}, username={}", 
                 userCode, user.getId(), username);
+        
+        // Log audit event
+        auditService.logDeviceCodeAuthorization(userCode, String.valueOf(user.getId()), username);
         
         return new AuthorizationResult(true, null);
     }
@@ -208,6 +221,9 @@ public class DeviceAuthService {
         logger.info("Tokens generated and device code deleted: device_code={}, user_id={}, username={}", 
                 deviceCode, user.getId(), user.getUsername());
 
+        // Log audit event for token issuance
+        auditService.logTokenIssuance(String.valueOf(user.getId()), deviceCode);
+
         return Optional.of(new TokenResponse(
                 accessToken,
                 refreshToken,
@@ -251,11 +267,13 @@ public class DeviceAuthService {
             // Validate refresh token
             if (jwtService.isTokenExpired(refreshToken)) {
                 logger.warn("Refresh token expired");
+                auditService.logTokenOperation("token_refresh", null, "FAILURE", "Refresh token expired");
                 return Optional.empty();
             }
             
             if (!jwtService.isRefreshToken(refreshToken)) {
                 logger.warn("Token is not a refresh token");
+                auditService.logTokenOperation("token_refresh", null, "FAILURE", "Token is not a refresh token");
                 return Optional.empty();
             }
             
@@ -270,6 +288,9 @@ public class DeviceAuthService {
             
             logger.info("Tokens refreshed successfully: user_id={}", userId);
             
+            // Log audit event for token refresh
+            auditService.logTokenOperation("token_refresh", userId, "SUCCESS", null);
+            
             return Optional.of(new TokenResponse(
                     newAccessToken,
                     newRefreshToken,
@@ -279,7 +300,37 @@ public class DeviceAuthService {
             ));
         } catch (Exception e) {
             logger.error("Error refreshing token: {}", e.getMessage(), e);
+            auditService.logTokenOperation("token_refresh", null, "FAILURE", e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Revoke a token (access or refresh)
+     * @param token The token to revoke (access or refresh token)
+     * @return User ID from the revoked token
+     * @throws Exception if token is invalid
+     */
+    public String revokeToken(String token) {
+        logger.debug("Revoking token");
+        
+        try {
+            // Validate token and extract user ID
+            String userId = jwtService.extractUserId(token);
+            
+            // Log audit event for token revocation
+            String tokenType = jwtService.isRefreshToken(token) ? "refresh_token" : "access_token";
+            auditService.logTokenOperation("token_revoke", userId, "SUCCESS", null);
+            
+            logger.info("Token revoked successfully: userId={}, tokenType={}", userId, tokenType);
+            
+            return userId;
+            
+        } catch (Exception e) {
+            logger.warn("Token revocation failed - invalid token: {}", e.getMessage());
+            // Log audit event for revocation failure
+            auditService.logTokenOperation("token_revoke", null, "FAILURE", "Invalid token");
+            throw new IllegalArgumentException("Invalid or expired token");
         }
     }
 

@@ -422,6 +422,109 @@
 					"response": []
 				},
 				{
+					"name": "4. Refresh Access Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"refresh_token\",\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						},
+						"description": "Refresh an expired access token using the refresh token. Uses refreshToken from Step 3 automatically. Returns new access_token and refresh_token. Tokens are automatically saved to collection variables."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.access_token) {",
+									"        pm.collectionVariables.set(\"accessToken\", jsonData.access_token);",
+									"        pm.collectionVariables.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Tokens refreshed successfully\");",
+									"        console.log(\"New access token saved to collection variable\");",
+									"        console.log(\"Token expires in: \" + jsonData.expires_in + \" seconds\");",
+									"    }",
+									"} else {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Token refresh failed: \" + (jsonData.error_description || jsonData.error));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "5. Revoke Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"description": "Access token to revoke"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/revoke",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"revoke"
+							]
+						},
+						"description": "Revoke an access or refresh token (RFC 7009). Accepts token via Authorization header or request body. Always returns 200 OK (even for invalid tokens) to prevent token enumeration attacks. Revocation is logged in audit events."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Token revoked successfully\");",
+									"    console.log(\"Message: \" + jsonData.message);",
+									"    if (jsonData.userId) {",
+									"        console.log(\"User ID: \" + jsonData.userId);",
+									"    }",
+									"    console.log(\"Note: You'll need to re-authenticate on next request\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
 					"name": "Complete Flow Test",
 					"request": {
 						"method": "GET",
@@ -436,12 +539,12 @@
 								"health"
 							]
 						},
-						"description": "Helper request to test the complete flow. Follow these steps:\n\n1. Run '1. Initiate Device Flow' - saves device_code and user_code\n2. Run '2. Authorize Device Code' - authorizes with credentials\n3. Run '3. Poll for Token' - gets access_token and refresh_token\n\nOr use the individual requests in sequence."
+						"description": "Helper request to test the complete flow. Follow these steps:\n\n1. Run '1. Initiate Device Flow' - saves device_code and user_code\n2. Run '2. Authorize Device Code' - authorizes with credentials\n3. Run '3. Poll for Token' - gets access_token and refresh_token\n4. (Optional) Run '4. Refresh Access Token' - refreshes expired tokens\n5. (Optional) Run '5. Revoke Token' - revokes access\n\nOr use the individual requests in sequence."
 					},
 					"response": []
 				}
 			],
-			"description": "OAuth 2.0 Device Code Flow endpoints (RFC 8628) for Step 2 of Option 4 (MCP Authentication). Complete flow: 1) Initiate device flow, 2) Authorize with user credentials, 3) Poll for tokens. All codes and tokens are automatically saved to collection variables for easy testing."
+			"description": "OAuth 2.0 Device Code Flow endpoints (RFC 8628) for Option 4 (MCP Authentication). Complete flow: 1) Initiate device flow, 2) Authorize with user credentials, 3) Poll for tokens, 4) Refresh tokens, 5) Revoke tokens. All codes and tokens are automatically saved to collection variables for easy testing. Audit events are logged for all operations."
 		},
 		{
 			"name": "Search",
@@ -803,9 +906,93 @@
 						"description": "Reindex a specific document by ID. Useful for testing or updating a single document's embeddings."
 					},
 					"response": []
+				},
+				{
+					"name": "Get Audit Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"description": "JWT access token required for admin endpoints"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/events?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"events"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (default: 0)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Page size (default: 20, max: 100)"
+								},
+								{
+									"key": "userId",
+									"value": "",
+									"description": "Filter by user ID (optional)",
+									"disabled": true
+								},
+								{
+									"key": "eventType",
+									"value": "",
+									"description": "Filter by event type: search, auth, token_op (optional)",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status: SUCCESS or FAILURE (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Query audit events with optional filters. Returns paginated list of audit events sorted by timestamp (most recent first). Useful for security monitoring and debugging. Requires JWT authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"description": "JWT access token required for admin endpoints"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"stats"
+							]
+						},
+						"description": "Get audit statistics for the last 24 hours. Returns event counts by type and status. Useful for monitoring security events and system health. Requires JWT authentication."
+					},
+					"response": []
 				}
 			],
-			"description": "Admin endpoints for managing embeddings and document indexing. Dev-only endpoints (require dev profile)."
+			"description": "Admin endpoints for managing embeddings, document indexing, and audit logs. Requires JWT authentication. Audit endpoints added in Step 7A."
 		}
 	],
 	"variable": [

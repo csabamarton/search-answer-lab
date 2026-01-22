@@ -363,7 +363,7 @@
 								"token"
 							]
 						},
-						"description": "Step 3: Poll for access token. MCP server calls this repeatedly (every 5 seconds) until user authorizes. Uses deviceCode from Step 1 automatically. After authorization, returns access_token and refresh_token. Tokens are automatically saved to collection variables."
+						"description": "Step 3: Poll for access token. MCP server calls this repeatedly (every 5 seconds) until user authorizes. Uses deviceCode from Step 1 automatically.\n\n**New Behavior (Phases 1-6):**\n- After authorization, returns access_token (15 min expiry) and refresh_token (30 days)\n- Refresh token is stored in database (hashed) and linked to user and device code\n- Returns expires_in: 900 (15 minutes)\n\n**Tokens are automatically saved to collection variables.**"
 					},
 					"response": [],
 					"event": [
@@ -445,7 +445,7 @@
 								"token"
 							]
 						},
-						"description": "Refresh an expired access token using the refresh token. Uses refreshToken from Step 3 automatically. Returns new access_token and refresh_token. Tokens are automatically saved to collection variables."
+						"description": "Refresh an expired access token using the refresh token (OAuth 2.0 refresh token flow).\n\n**New Behavior (Phases 1-6):**\n- Validates refresh token exists in database (hashed)\n- Atomically deletes old refresh token (prevents race conditions)\n- Issues new access token (15 min expiry) and new refresh token (30 days)\n- Stores new refresh token in database (token rotation)\n- Returns expires_in: 900 (15 minutes)\n\n**Uses refreshToken from Step 3 automatically. Tokens are automatically saved to collection variables.**\n\n**Note:** If refresh token was revoked, this will fail with 401 (token not found in database)."
 					},
 					"response": [],
 					"event": [
@@ -501,7 +501,7 @@
 								"revoke"
 							]
 						},
-						"description": "Revoke an access or refresh token (RFC 7009). Accepts token via Authorization header or request body. Always returns 200 OK (even for invalid tokens) to prevent token enumeration attacks. Revocation is logged in audit events."
+						"description": "Revoke an access or refresh token (RFC 7009).\n\n**New Behavior (Phases 1-6):**\n- **Refresh token revocation:** Deletes the specific refresh token from database (prevents future access)\n- **Access token revocation:** Deletes ALL refresh tokens for the user (logout all devices)\n- **Actual enforcement:** Revoked tokens cannot be used to refresh (database check)\n- Access tokens remain valid until expiry (15 min max), but cannot be refreshed\n\n**Accepts token via Authorization header or request body.**\n\n**Always returns 200 OK** (even for invalid tokens) to prevent token enumeration attacks.\n\n**Revocation is logged in audit events.**\n\n**Note:** After revocation, you must complete device code flow again to get new tokens."
 					},
 					"response": [],
 					"event": [

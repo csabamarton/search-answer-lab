@@ -1,8 +1,10 @@
 package com.searchlab.service;
 
 import com.searchlab.model.entity.DeviceCode;
+import com.searchlab.model.entity.RefreshToken;
 import com.searchlab.model.entity.User;
 import com.searchlab.repository.DeviceCodeRepository;
+import com.searchlab.repository.RefreshTokenRepository;
 import com.searchlab.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +27,11 @@ public class DeviceAuthService {
 
     private final DeviceCodeRepository deviceCodeRepository;
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
     private final UserService userService;
     private final AuditService auditService;
+    private final TokenHashService tokenHashService;
 
     @Value("${server.port:8080}")
     private int serverPort;
@@ -43,14 +47,18 @@ public class DeviceAuthService {
     public DeviceAuthService(
             DeviceCodeRepository deviceCodeRepository,
             UserRepository userRepository,
+            RefreshTokenRepository refreshTokenRepository,
             JwtService jwtService,
             UserService userService,
-            AuditService auditService) {
+            AuditService auditService,
+            TokenHashService tokenHashService) {
         this.deviceCodeRepository = deviceCodeRepository;
         this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
         this.userService = userService;
         this.auditService = auditService;
+        this.tokenHashService = tokenHashService;
     }
 
     /**
@@ -216,6 +224,20 @@ public class DeviceAuthService {
         String accessToken = jwtService.generateAccessToken(String.valueOf(user.getId()), scopes);
         String refreshToken = jwtService.generateRefreshToken(String.valueOf(user.getId()));
 
+        // Store refresh token in database (hashed)
+        String refreshTokenHash = tokenHashService.hashToken(refreshToken);
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .tokenHash(refreshTokenHash)
+                .user(user)
+                .userId(user.getId())
+                .deviceCode(deviceCode)
+                .expiresAt(LocalDateTime.now().plusDays(30)) // 30 days
+                .createdAt(LocalDateTime.now())
+                .build();
+        refreshTokenRepository.save(refreshTokenEntity);
+        logger.debug("Refresh token stored in database: user_id={}, device_code={}", 
+                user.getId(), deviceCode);
+
         // Delete the device code (one-time use)
         deviceCodeRepository.delete(code);
         logger.info("Tokens generated and device code deleted: device_code={}, user_id={}, username={}", 
@@ -228,7 +250,7 @@ public class DeviceAuthService {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                3600, // expires_in
+                900, // 15 minutes in seconds (OAuth 2.0 best practice)
                 scopes
         ));
     }
@@ -256,17 +278,21 @@ public class DeviceAuthService {
     }
 
     /**
-     * Refresh access token using refresh token
-     * @return TokenResponse with new access and refresh tokens, or empty if refresh token is invalid/expired
+     * Refresh access token using refresh token.
+     * 
+     * CRITICAL: Uses atomic delete with row count check to prevent race conditions.
+     * Only ONE concurrent refresh request can succeed per refresh token.
+     * 
+     * @return TokenResponse with new access and refresh tokens, or empty if refresh token is invalid/expired/revoked
      */
     @Transactional
     public Optional<TokenResponse> refreshToken(String refreshToken) {
         logger.debug("Refreshing token");
         
         try {
-            // Validate refresh token
+            // Step 1: Validate JWT structure and expiry
             if (jwtService.isTokenExpired(refreshToken)) {
-                logger.warn("Refresh token expired");
+                logger.warn("Refresh token expired (JWT)");
                 auditService.logTokenOperation("token_refresh", null, "FAILURE", "Refresh token expired");
                 return Optional.empty();
             }
@@ -277,25 +303,69 @@ public class DeviceAuthService {
                 return Optional.empty();
             }
             
-            // Extract user ID from refresh token
-            String userId = jwtService.extractUserId(refreshToken);
-            logger.info("Refresh token valid, generating new tokens: user_id={}", userId);
+            // Step 2: Hash the refresh token
+            String refreshTokenHash = tokenHashService.hashToken(refreshToken);
             
-            // Generate new tokens with same scopes (default scopes for now)
+            // Step 3: CRITICAL FIX - Atomic consumption with row count check (prevents race conditions)
+            // This ensures only ONE concurrent refresh request succeeds per token
+            int deletedRows = refreshTokenRepository.deleteByTokenHash(refreshTokenHash);
+            
+            if (deletedRows == 0) {
+                // Token not found (already used, revoked, or never existed)
+                logger.warn("Refresh token not found in database (may be revoked or already used)");
+                auditService.logTokenOperation("token_refresh", null, "FAILURE", 
+                    "Refresh token not found or revoked");
+                return Optional.empty();
+            }
+            
+            if (deletedRows > 1) {
+                // Should never happen (tokenHash is UNIQUE constraint)
+                logger.error("Database anomaly: multiple tokens deleted for same hash");
+                auditService.logTokenOperation("token_refresh", null, "FAILURE", 
+                    "Database integrity issue");
+                return Optional.empty();
+            }
+            
+            // Step 4: Token consumed successfully (exactly 1 row deleted)
+            // This is atomic - only ONE request gets here per refresh token
+            logger.debug("Refresh token consumed successfully (atomic delete)");
+            
+            // Step 5: Extract user ID and load user
+            String userId = jwtService.extractUserId(refreshToken);
+            User user = userRepository.findById(Long.parseLong(userId))
+                .orElseThrow(() -> {
+                    logger.error("User not found: user_id={}", userId);
+                    return new IllegalStateException("User not found: " + userId);
+                });
+            
+            // Step 6: Generate new tokens
             List<String> scopes = List.of("docs:search", "docs:read");
             String newAccessToken = jwtService.generateAccessToken(userId, scopes);
             String newRefreshToken = jwtService.generateRefreshToken(userId);
             
+            // Step 7: Store new refresh token in database
+            String newRefreshTokenHash = tokenHashService.hashToken(newRefreshToken);
+            RefreshToken newRefreshTokenEntity = RefreshToken.builder()
+                    .tokenHash(newRefreshTokenHash)
+                    .user(user)
+                    .userId(user.getId())
+                    // Note: deviceCode is not preserved on refresh (new session)
+                    .expiresAt(LocalDateTime.now().plusDays(30)) // 30 days
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            refreshTokenRepository.save(newRefreshTokenEntity);
+            
             logger.info("Tokens refreshed successfully: user_id={}", userId);
             
-            // Log audit event for token refresh
+            // Step 8: Log audit event
             auditService.logTokenOperation("token_refresh", userId, "SUCCESS", null);
             
+            // Step 9: Return new tokens
             return Optional.of(new TokenResponse(
                     newAccessToken,
                     newRefreshToken,
                     "Bearer",
-                    3600, // expires_in
+                    900, // 15 minutes in seconds (OAuth 2.0 best practice)
                     scopes
             ));
         } catch (Exception e) {
@@ -306,24 +376,52 @@ public class DeviceAuthService {
     }
 
     /**
-     * Revoke a token (access or refresh)
+     * Revoke a token (access or refresh).
+     * 
+     * Revocation strategy:
+     * - If refresh token: Delete that specific token from database
+     * - If access token: Delete ALL refresh tokens for that user (prevents new access tokens)
+     * 
      * @param token The token to revoke (access or refresh token)
      * @return User ID from the revoked token
      * @throws Exception if token is invalid
      */
+    @Transactional
     public String revokeToken(String token) {
         logger.debug("Revoking token");
         
         try {
-            // Validate token and extract user ID
+            // Step 1: Validate token and extract user ID
             String userId = jwtService.extractUserId(token);
-            
-            // Log audit event for token revocation
             String tokenType = jwtService.isRefreshToken(token) ? "refresh_token" : "access_token";
-            auditService.logTokenOperation("token_revoke", userId, "SUCCESS", null);
+            
+            // Step 2: If it's a refresh token, delete it from database
+            if (jwtService.isRefreshToken(token)) {
+                String refreshTokenHash = tokenHashService.hashToken(token);
+                int deletedRows = refreshTokenRepository.deleteByTokenHash(refreshTokenHash);
+                
+                if (deletedRows > 0) {
+                    logger.info("Refresh token revoked and deleted from database: user_id={}", userId);
+                } else {
+                    logger.warn("Refresh token not found in database (may already be revoked): user_id={}", userId);
+                }
+            } else {
+                // Step 3: If it's an access token, revoke ALL refresh tokens for this user
+                // (Access tokens expire quickly, but we want to prevent new tokens from being issued)
+                long deletedCount = refreshTokenRepository.deleteByUserId(Long.parseLong(userId));
+                if (deletedCount > 0) {
+                    logger.info("All refresh tokens revoked for user: user_id={}, count={}", 
+                        userId, deletedCount);
+                } else {
+                    logger.debug("No refresh tokens found for user: user_id={}", userId);
+                }
+            }
+            
+            // Step 4: Log audit event for token revocation
+            auditService.logTokenOperation("token_revoke", userId, "SUCCESS", 
+                "Token type: " + tokenType);
             
             logger.info("Token revoked successfully: userId={}, tokenType={}", userId, tokenType);
-            
             return userId;
             
         } catch (Exception e) {

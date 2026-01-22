@@ -79,6 +79,6 @@ logging:
 jwt:
   secret: ${JWT_SECRET:my-super-secret-key-for-development-only-min-256-bits-required}
   access-token:
-    expiry: 3600  # 1 hour in seconds
+    expiry: 900  # 15 minutes in seconds (OAuth 2.0 best practice)
   refresh-token:
     expiry: 2592000  # 30 days in seconds

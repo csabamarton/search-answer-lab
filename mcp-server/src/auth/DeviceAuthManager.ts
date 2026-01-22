@@ -60,10 +60,18 @@ export class DeviceAuthManager {
           }
         } catch (error) {
           console.error(`[DeviceAuthManager] Token refresh failed: ${error}`);
+          // If refresh failed (token revoked), clear local tokens
+          // This ensures revoked tokens are not reused
+          console.error("[DeviceAuthManager] Clearing local tokens due to refresh failure (token may be revoked)");
+          await clearTokens();
+          this.pendingDeviceCode = null;
           // Fall through to re-authentication
         }
       } else {
-        // Token is valid
+        // Token is valid (not expired)
+        // Note: We don't check if token was revoked on backend here
+        // because access tokens are stateless JWTs. They remain valid until expiry.
+        // Revocation prevents new tokens, but current token works until expiry.
         console.error("[DeviceAuthManager] Token is valid, using stored token");
         return storedTokens.accessToken;
       }
@@ -392,11 +400,20 @@ export class DeviceAuthManager {
           error?: string;
           error_description?: string;
         };
-        if (errorData.error === "invalid_grant") {
-          // Refresh token expired - need to re-authenticate
+        
+        // If refresh failed (401/403 or invalid_grant), token was likely revoked or expired
+        // Clear local tokens to prevent reuse
+        if (response.status === 401 || response.status === 403 || errorData.error === "invalid_grant") {
+          console.error("[DeviceAuthManager] Refresh failed with 401/403/invalid_grant - token likely revoked or expired, clearing local tokens");
           await clearTokens();
-          return null;
+          this.pendingDeviceCode = null;
+          
+          if (errorData.error === "invalid_grant") {
+            // Refresh token expired - need to re-authenticate
+            return null;
+          }
         }
+        
         throw new AuthError(
           `Token refresh failed: ${errorData.error_description || errorData.error || "Unknown error"}`,
           errorData.error || "refresh_failed",
@@ -485,7 +502,11 @@ export class DeviceAuthManager {
       try {
         const refreshed = await this.refreshToken(storedTokens.refreshToken);
         return refreshed ? refreshed.access_token : null;
-      } catch {
+      } catch (error) {
+        // If refresh failed (token revoked), clear local tokens
+        console.error(`[DeviceAuthManager] Refresh failed in getAccessToken, clearing tokens: ${error}`);
+        await clearTokens();
+        this.pendingDeviceCode = null;
         return null;
       }
     }

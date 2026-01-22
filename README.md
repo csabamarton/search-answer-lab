@@ -43,6 +43,20 @@ The application supports three different search access patterns:
 | **Semantic (Frontend)** | User → Frontend → Backend → Embeddings → DB | ~1.5s | Conceptual queries, meaning-based search |
 | **Semantic (MCP)** | User → Claude → MCP → Backend → Embeddings → DB | ~1.5s | Natural language questions, AI-powered search |
 
+## 🎥 Demo
+
+Watch a demo of the MCP Server authentication flow:
+
+📹 **[Watch Demo Video](demo/MCP-Server%20with%20Auth.mp4)** (52 MB)
+
+The demo video shows:
+- MCP Server authentication flow
+- Device code authorization
+- Search functionality via Claude Desktop
+- Token management and refresh
+
+> **Note:** The video is stored using [Git LFS](https://git-lfs.github.com/) to keep the repository size manageable. When cloning, ensure Git LFS is installed (`git lfs install`) to download the video file.
+
 ## 🚀 Quick Start
 
 ### Prerequisites

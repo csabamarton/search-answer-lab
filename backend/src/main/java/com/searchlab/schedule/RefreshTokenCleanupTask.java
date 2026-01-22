@@ -65,7 +65,7 @@ public class RefreshTokenCleanupTask {
             // Delete tokens that expired more than 1 day ago
             // This buffer ensures we don't delete tokens that just expired
             LocalDateTime cutoff = LocalDateTime.now().minusDays(1);
-            long deleted = refreshTokenRepository.deleteByExpiresAtBefore(cutoff);
+            int deleted = refreshTokenRepository.deleteByExpiresAtBefore(cutoff);
             
             if (deleted > 0) {
                 logger.info("Cleaned up {} expired refresh tokens (expired before {})", deleted, cutoff);

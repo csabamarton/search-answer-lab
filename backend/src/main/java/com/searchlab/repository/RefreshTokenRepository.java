@@ -51,9 +51,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     /**
      * Delete expired refresh tokens (for cleanup job).
-     * FIXED: Returns long (count of deleted rows), not a collection.
+     * FIXED: Returns int (count of deleted rows) - Spring Data JPA modifying queries can only return void or int/Integer.
      */
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.expiresAt < :cutoff")
-    long deleteByExpiresAtBefore(@Param("cutoff") LocalDateTime cutoff);
+    int deleteByExpiresAtBefore(@Param("cutoff") LocalDateTime cutoff);
 }

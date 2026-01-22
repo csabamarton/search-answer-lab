@@ -84,8 +84,10 @@ export class DeviceAuthManager {
       // Check if we have a pending device code that's still valid
       if (this.pendingDeviceCode) {
         const now = Math.floor(Date.now() / 1000);
-        if (now < this.pendingDeviceCode.expiresAt) {
-          // Try to poll once to see if user has authorized while we were waiting
+        const timeRemaining = this.pendingDeviceCode.expiresAt - now;
+        
+        if (timeRemaining > 0) {
+          // Code is still valid - try to poll once to see if user has authorized
           console.error(`[DeviceAuthManager] Checking if pending device code ${this.pendingDeviceCode.userCode} has been authorized...`);
           try {
             const tokenResponse = await this.pollForTokenOnce(this.pendingDeviceCode.deviceCode);
@@ -108,15 +110,21 @@ export class DeviceAuthManager {
               console.error("✅ Authentication successful (pending device code authorized)!");
               return tokenResponse.access_token;
             }
-          } catch (error) {
-            // Not authorized yet, that's fine - continue to return device code info
-            console.error(`[DeviceAuthManager] Pending device code not yet authorized, returning code info`);
+          } catch (error: any) {
+            // Check if error indicates code expired on backend
+            if (error.message?.includes("expired") || error.message?.includes("invalid") || error.code === "expired_token") {
+              console.error(`[DeviceAuthManager] Backend reports device code expired, clearing pending code`);
+              this.pendingDeviceCode = null;
+            } else {
+              // Not authorized yet, that's fine - continue to return device code info
+              console.error(`[DeviceAuthManager] Pending device code not yet authorized, returning code info`);
+            }
           }
           
-          // Reuse existing pending device code
+          // Reuse existing pending device code only if it's still valid
           const pending = this.pendingDeviceCode; // Store reference for type safety
-          if (pending) {
-            console.error(`[DeviceAuthManager] Reusing pending device code: ${pending.userCode}`);
+          if (pending && timeRemaining > 0) {
+            console.error(`[DeviceAuthManager] Reusing pending device code: ${pending.userCode} (${Math.floor(timeRemaining / 60)} min remaining)`);
             throw new AuthError(
               `Authentication required. Please visit ${pending.verificationUri} and enter code: ${pending.userCode}`,
               "authentication_required",
@@ -124,13 +132,17 @@ export class DeviceAuthManager {
               {
                 userCode: pending.userCode,
                 verificationUri: pending.verificationUri,
-                expiresIn: pending.expiresAt - now,
+                expiresIn: timeRemaining,
               }
             );
+          } else {
+            // Code expired or was cleared, generate new one
+            console.error(`[DeviceAuthManager] Pending device code expired or invalid, generating new one`);
+            this.pendingDeviceCode = null;
           }
         } else {
           // Pending device code expired, clear it
-          console.error(`[DeviceAuthManager] Pending device code expired, generating new one`);
+          console.error(`[DeviceAuthManager] Pending device code expired (${Math.abs(timeRemaining)} seconds ago), generating new one`);
           this.pendingDeviceCode = null;
         }
       }
@@ -247,6 +259,18 @@ export class DeviceAuthManager {
       if (errorData.error === "authorization_pending") {
         // Still waiting - return null
         return null;
+      }
+
+      // Check if code expired
+      if (errorData.error === "expired_token" || 
+          errorData.error_description?.toLowerCase().includes("expired") ||
+          errorData.error_description?.toLowerCase().includes("expire")) {
+        // Code expired - throw with special code
+        throw new AuthError(
+          `Device code expired: ${errorData.error_description || errorData.error || "Unknown error"}`,
+          "expired_token",
+          false
+        );
       }
 
       // Other error - throw

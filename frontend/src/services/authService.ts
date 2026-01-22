@@ -22,26 +22,37 @@ export async function authorizeDeviceCode(
   username: string,
   password: string
 ): Promise<AuthorizeResponse> {
-  const response = await fetch(`${API_BASE_URL}/oauth/device/authorize`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      user_code: userCode,
-      username,
-      password,
-    }),
-  })
+  try {
+    const response = await fetch(`${API_BASE_URL}/oauth/device/authorize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_code: userCode,
+        username,
+        password,
+      }),
+    })
 
-  if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({
-      error: 'Authorization failed',
-      error_description: `HTTP ${response.status}`,
-    }))) as ErrorResponse
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => ({
+        error: 'Authorization failed',
+        error_description: `HTTP ${response.status}: ${response.statusText}`,
+      }))) as ErrorResponse
 
-    throw new Error(errorData.error_description || errorData.error || 'Authorization failed')
+      throw new Error(errorData.error_description || errorData.error || 'Authorization failed')
+    }
+
+    return (await response.json()) as AuthorizeResponse
+  } catch (error: any) {
+    // Handle network errors (backend not running, CORS, etc.)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error(
+        `Cannot connect to backend at ${API_BASE_URL}. Please ensure the backend is running on port 8080.`
+      )
+    }
+    // Re-throw other errors
+    throw error
   }
-
-  return (await response.json()) as AuthorizeResponse
 }

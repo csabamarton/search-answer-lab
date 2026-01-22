@@ -59,11 +59,15 @@ function AuthorizationPage() {
       await authorizeDeviceCode(userCode, username, password)
       setSuccess(true)
     } catch (err: any) {
-      setError(
+      // Extract error message from various error types
+      const errorMessage = 
         err.response?.data?.error_description ||
-          err.message ||
-          'Authorization failed. Please check your code and credentials.'
-      )
+        err.message ||
+        err.toString() ||
+        'Authorization failed. Please check your code and credentials.'
+      
+      console.error('Authorization error:', err)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

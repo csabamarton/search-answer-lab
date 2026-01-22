@@ -70,19 +70,501 @@
 			"description": "Health check endpoints for monitoring application, database, and embeddings service status"
 		},
 		{
+			"name": "JWT Testing",
+			"item": [
+				{
+					"name": "Generate Test Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"alice\",\n  \"scopes\": [\"docs:search\", \"docs:read\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/test/jwt/generate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"test",
+								"jwt",
+								"generate"
+							]
+						},
+						"description": "Generate test JWT access and refresh tokens. Returns access_token, refresh_token, token_type, expires_in, and scopes. This is a temporary test endpoint for Step 1 of Option 4 implementation."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.access_token) {",
+									"        pm.collectionVariables.set(\"accessToken\", jsonData.access_token);",
+									"        pm.collectionVariables.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Access token saved to collection variable\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Generate Test Token - Minimal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/test/jwt/generate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"test",
+								"jwt",
+								"generate"
+							]
+						},
+						"description": "Generate test token with default values (userId: 'test-user', scopes: ['docs:search', 'docs:read'])."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.access_token) {",
+									"        pm.collectionVariables.set(\"accessToken\", jsonData.access_token);",
+									"        pm.collectionVariables.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Access token saved to collection variable\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Validate Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/test/jwt/validate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"test",
+								"jwt",
+								"validate"
+							]
+						},
+						"description": "Validate a JWT token. Returns valid status, userId, scopes, and expired flag. Uses the accessToken collection variable by default. This is a temporary test endpoint for Step 1 of Option 4 implementation."
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Token - Custom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"<paste-token-here>\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/test/jwt/validate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"test",
+								"jwt",
+								"validate"
+							]
+						},
+						"description": "Validate a custom JWT token. Replace <paste-token-here> with the token you want to validate."
+					},
+					"response": []
+				}
+			],
+			"description": "JWT testing endpoints for Step 1 of Option 4 (MCP Authentication). These are temporary test endpoints that should be removed after testing. Use these to generate and validate JWT tokens before implementing the full OAuth Device Code Flow."
+		},
+		{
+			"name": "OAuth Device Code Flow",
+			"item": [
+				{
+					"name": "1. Initiate Device Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/device/code",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"device",
+								"code"
+							]
+						},
+						"description": "Step 1: Initiate OAuth Device Code Flow. Returns device_code, user_code, verification_uri, expires_in, and interval. The device_code and user_code are automatically saved to collection variables."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.device_code) {",
+									"        pm.collectionVariables.set(\"deviceCode\", jsonData.device_code);",
+									"        pm.collectionVariables.set(\"userCode\", jsonData.user_code);",
+									"        pm.collectionVariables.set(\"verificationUri\", jsonData.verification_uri);",
+									"        console.log(\"Device code saved: \" + jsonData.device_code);",
+									"        console.log(\"User code saved: \" + jsonData.user_code);",
+									"        console.log(\"Visit: \" + jsonData.verification_uri + \" and enter code: \" + jsonData.user_code);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Authorize Device Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_code\": \"{{userCode}}\",\n  \"username\": \"admin\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/device/authorize",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"device",
+								"authorize"
+							]
+						},
+						"description": "Step 2: Authorize the device code by providing user credentials. Uses the userCode from Step 1 automatically. Default credentials: username='admin', password='password' (from seeded user)."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Authorize Device Code - Custom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_code\": \"<enter-user-code-here>\",\n  \"username\": \"admin\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/device/authorize",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"device",
+								"authorize"
+							]
+						},
+						"description": "Authorize with a custom user_code. Replace <enter-user-code-here> with the user_code from Step 1."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Poll for Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"device_code\": \"{{deviceCode}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/device/token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"device",
+								"token"
+							]
+						},
+						"description": "Step 3: Poll for access token. MCP server calls this repeatedly (every 5 seconds) until user authorizes. Uses deviceCode from Step 1 automatically.\n\n**New Behavior (Phases 1-6):**\n- After authorization, returns access_token (15 min expiry) and refresh_token (30 days)\n- Refresh token is stored in database (hashed) and linked to user and device code\n- Returns expires_in: 900 (15 minutes)\n\n**Tokens are automatically saved to collection variables.**"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.access_token) {",
+									"        pm.collectionVariables.set(\"accessToken\", jsonData.access_token);",
+									"        pm.collectionVariables.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Access token saved to collection variable\");",
+									"        console.log(\"Token type: \" + jsonData.token_type);",
+									"        console.log(\"Expires in: \" + jsonData.expires_in + \" seconds\");",
+									"    }",
+									"} else if (pm.response.code === 400) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.error === 'authorization_pending') {",
+									"        console.log(\"Authorization still pending. Poll again in 5 seconds.\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3. Poll for Token - Custom",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"device_code\": \"<enter-device-code-here>\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/device/token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"device",
+								"token"
+							]
+						},
+						"description": "Poll with a custom device_code. Replace <enter-device-code-here> with the device_code from Step 1."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Refresh Access Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"refresh_token\",\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						},
+						"description": "Refresh an expired access token using the refresh token (OAuth 2.0 refresh token flow).\n\n**New Behavior (Phases 1-6):**\n- Validates refresh token exists in database (hashed)\n- Atomically deletes old refresh token (prevents race conditions)\n- Issues new access token (15 min expiry) and new refresh token (30 days)\n- Stores new refresh token in database (token rotation)\n- Returns expires_in: 900 (15 minutes)\n\n**Uses refreshToken from Step 3 automatically. Tokens are automatically saved to collection variables.**\n\n**Note:** If refresh token was revoked, this will fail with 401 (token not found in database)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.access_token) {",
+									"        pm.collectionVariables.set(\"accessToken\", jsonData.access_token);",
+									"        pm.collectionVariables.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Tokens refreshed successfully\");",
+									"        console.log(\"New access token saved to collection variable\");",
+									"        console.log(\"Token expires in: \" + jsonData.expires_in + \" seconds\");",
+									"    }",
+									"} else {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Token refresh failed: \" + (jsonData.error_description || jsonData.error));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "5. Revoke Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"description": "Access token to revoke"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/oauth/revoke",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"revoke"
+							]
+						},
+						"description": "Revoke an access or refresh token (RFC 7009).\n\n**New Behavior (Phases 1-6):**\n- **Refresh token revocation:** Deletes the specific refresh token from database (prevents future access)\n- **Access token revocation:** Deletes ALL refresh tokens for the user (logout all devices)\n- **Actual enforcement:** Revoked tokens cannot be used to refresh (database check)\n- Access tokens remain valid until expiry (15 min max), but cannot be refreshed\n\n**Accepts token via Authorization header or request body.**\n\n**Always returns 200 OK** (even for invalid tokens) to prevent token enumeration attacks.\n\n**Revocation is logged in audit events.**\n\n**Note:** After revocation, you must complete device code flow again to get new tokens."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Token revoked successfully\");",
+									"    console.log(\"Message: \" + jsonData.message);",
+									"    if (jsonData.userId) {",
+									"        console.log(\"User ID: \" + jsonData.userId);",
+									"    }",
+									"    console.log(\"Note: You'll need to re-authenticate on next request\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Complete Flow Test",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Helper request to test the complete flow. Follow these steps:\n\n1. Run '1. Initiate Device Flow' - saves device_code and user_code\n2. Run '2. Authorize Device Code' - authorizes with credentials\n3. Run '3. Poll for Token' - gets access_token and refresh_token\n4. (Optional) Run '4. Refresh Access Token' - refreshes expired tokens\n5. (Optional) Run '5. Revoke Token' - revokes access\n\nOr use the individual requests in sequence."
+					},
+					"response": []
+				}
+			],
+			"description": "OAuth 2.0 Device Code Flow endpoints (RFC 8628) for Option 4 (MCP Authentication). Complete flow: 1) Initiate device flow, 2) Authorize with user credentials, 3) Poll for tokens, 4) Refresh tokens, 5) Revoke tokens. All codes and tokens are automatically saved to collection variables for easy testing. Audit events are logged for all operations."
+		},
+		{
 			"name": "Search",
 			"item": [
 				{
 					"name": "Traditional",
 					"item": [
 						{
-							"name": "Traditional Search",
+							"name": "Traditional Search (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}",
+										"description": "JWT access token (automatically set by OAuth Device Code Flow)"
 									}
 								],
 								"body": {
@@ -99,18 +581,50 @@
 										"search"
 									]
 								},
-								"description": "Execute a traditional full-text search query using PostgreSQL FTS. Returns paginated results with relevance scores."
+								"description": "Execute a traditional full-text search query using PostgreSQL FTS. Requires JWT token with 'docs:search' scope. Returns paginated results with relevance scores. Token is automatically included from collection variable."
 							},
 							"response": []
 						},
 						{
-							"name": "Traditional Search - Minimal",
+							"name": "Traditional Search (Unauthenticated - Should Fail)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"query\": \"database\",\n  \"mode\": \"traditional\",\n  \"page\": 0,\n  \"pageSize\": 10\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/search",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"search"
+									]
+								},
+								"description": "Test endpoint - should return 401 Unauthorized since no token is provided. This demonstrates that /api/search is now protected."
+							},
+							"response": []
+						},
+						{
+							"name": "Traditional Search - Minimal (Authenticated)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -132,13 +646,17 @@
 							"response": []
 						},
 						{
-							"name": "Traditional Search - Pagination",
+							"name": "Traditional Search - Pagination (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -155,18 +673,22 @@
 										"search"
 									]
 								},
-								"description": "Search request with pagination (page 0, pageSize 5) and trace ID for tracking."
+								"description": "Search request with pagination (page 0, pageSize 5) and trace ID for tracking. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Traditional Search - Multi-word",
+							"name": "Traditional Search - Multi-word (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -183,24 +705,28 @@
 										"search"
 									]
 								},
-								"description": "Search with multiple words. All words must be present in the results (AND operator)."
+								"description": "Search with multiple words. All words must be present in the results (AND operator). Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						}
 					],
-					"description": "Traditional full-text search endpoints using PostgreSQL FTS (tsvector/tsquery)"
+					"description": "Traditional full-text search endpoints using PostgreSQL FTS (tsvector/tsquery). All endpoints require JWT authentication with 'docs:search' scope. Use the OAuth Device Code Flow to obtain an access token first."
 				},
 				{
 					"name": "Semantic",
 					"item": [
 						{
-							"name": "Semantic Search",
+							"name": "Semantic Search (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -217,18 +743,22 @@
 										"search"
 									]
 								},
-								"description": "Execute a semantic search query using vector embeddings. Returns results based on semantic similarity rather than keyword matching. Falls back to traditional search if embeddings service is unavailable."
+								"description": "Execute a semantic search query using vector embeddings. Returns results based on semantic similarity rather than keyword matching. Falls back to traditional search if embeddings service is unavailable. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Semantic Search - Minimal",
+							"name": "Semantic Search - Minimal (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -245,18 +775,22 @@
 										"search"
 									]
 								},
-								"description": "Minimal semantic search request. Uses default mode (traditional) if mode not specified, so explicitly set mode to semantic."
+								"description": "Minimal semantic search request. Uses default mode (traditional) if mode not specified, so explicitly set mode to semantic. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Semantic Search - Pagination",
+							"name": "Semantic Search - Pagination (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -273,18 +807,22 @@
 										"search"
 									]
 								},
-								"description": "Semantic search with pagination. Returns top 5 most semantically similar results."
+								"description": "Semantic search with pagination. Returns top 5 most semantically similar results. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						},
 						{
-							"name": "Semantic Search - Conceptual Query",
+							"name": "Semantic Search - Conceptual Query (Authenticated)",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Content-Type",
 										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"body": {
@@ -301,15 +839,15 @@
 										"search"
 									]
 								},
-								"description": "Semantic search with a conceptual query. Semantic search excels at finding documents that match the meaning/intent even if they don't contain exact keywords."
+								"description": "Semantic search with a conceptual query. Semantic search excels at finding documents that match the meaning/intent even if they don't contain exact keywords. Requires JWT token with 'docs:search' scope."
 							},
 							"response": []
 						}
 					],
-					"description": "Semantic search endpoints using vector embeddings (pgvector). Requires embeddings service to be running."
+					"description": "Semantic search endpoints using vector embeddings (pgvector). Requires embeddings service to be running. All endpoints require JWT authentication with 'docs:search' scope. Use the OAuth Device Code Flow to obtain an access token first."
 				}
 			],
-			"description": "Search endpoints for both traditional (FTS) and semantic (vector) search"
+			"description": "Search endpoints for both traditional (FTS) and semantic (vector) search. All endpoints require JWT authentication with 'docs:search' scope. Tokens are automatically included from collection variables if you've completed the OAuth Device Code Flow."
 		},
 		{
 			"name": "Admin",
@@ -368,9 +906,93 @@
 						"description": "Reindex a specific document by ID. Useful for testing or updating a single document's embeddings."
 					},
 					"response": []
+				},
+				{
+					"name": "Get Audit Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"description": "JWT access token required for admin endpoints"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/events?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"events"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (default: 0)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Page size (default: 20, max: 100)"
+								},
+								{
+									"key": "userId",
+									"value": "",
+									"description": "Filter by user ID (optional)",
+									"disabled": true
+								},
+								{
+									"key": "eventType",
+									"value": "",
+									"description": "Filter by event type: search, auth, token_op (optional)",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status: SUCCESS or FAILURE (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Query audit events with optional filters. Returns paginated list of audit events sorted by timestamp (most recent first). Useful for security monitoring and debugging. Requires JWT authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"description": "JWT access token required for admin endpoints"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"stats"
+							]
+						},
+						"description": "Get audit statistics for the last 24 hours. Returns event counts by type and status. Useful for monitoring security events and system health. Requires JWT authentication."
+					},
+					"response": []
 				}
 			],
-			"description": "Admin endpoints for managing embeddings and document indexing. Dev-only endpoints (require dev profile)."
+			"description": "Admin endpoints for managing embeddings, document indexing, and audit logs. Requires JWT authentication. Audit endpoints added in Step 7A."
 		}
 	],
 	"variable": [
@@ -385,6 +1007,36 @@
 			"value": "http://localhost:8090",
 			"type": "string",
 			"description": "Base URL for the Python embeddings service"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string",
+			"description": "JWT access token (automatically set by Generate Test Token requests)"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string",
+			"description": "JWT refresh token (automatically set by Generate Test Token requests)"
+		},
+		{
+			"key": "deviceCode",
+			"value": "",
+			"type": "string",
+			"description": "OAuth device code (automatically set by Initiate Device Flow request)"
+		},
+		{
+			"key": "userCode",
+			"value": "",
+			"type": "string",
+			"description": "OAuth user code (automatically set by Initiate Device Flow request)"
+		},
+		{
+			"key": "verificationUri",
+			"value": "",
+			"type": "string",
+			"description": "OAuth verification URI (automatically set by Initiate Device Flow request)"
 		}
 	]
 }

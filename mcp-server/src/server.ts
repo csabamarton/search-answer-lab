@@ -68,15 +68,28 @@ export async function createMcpServer(): Promise<Server> {
   // Call tool handler
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "search_docs") {
-      const result = await handleSearchDocs(request.params.arguments || {});
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
+      try {
+        const result = await handleSearchDocs(request.params.arguments || {});
+        
+        // If result already has content array (e.g., from auth instructions), return it directly
+        if (result && typeof result === "object" && "content" in result && Array.isArray(result.content)) {
+          return result;
+        }
+        
+        // Otherwise, wrap result in content array (normal search results)
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        // Re-throw to let MCP SDK handle it, but ensure error message is clear
+        // The error message will be included in the JSON-RPC error response
+        throw error;
+      }
     }
 
     throw new Error(`Unknown tool: ${request.params.name}`);
